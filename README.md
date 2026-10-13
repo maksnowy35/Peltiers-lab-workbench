@@ -1,4 +1,4 @@
-# teglab - thermoelectric pair workbench
+# Peltier lab - thermoelectric pair workbench
 
 **From ANSYS Thermal-Electric results to an optimized, buildable Peltier/TEG pair.**
 Import design points from ANSYS Workbench, check them automatically, calibrate a fast 1D model on them,
@@ -15,7 +15,7 @@ soldering and the measurements in the lab - in one web app.
 
 The project grew out of my master's thesis *Numerical analysis and optimization of Peltier thermoelectric
 modules* (Warsaw University of Technology, Faculty of Power and Aeronautical Engineering, 2026) - a 3D
-thermal-electric FEM study of a TEC1-12706 unit cell with prismatic and frustum-shaped legs. teglab turns that
+thermal-electric FEM study of a TEC1-12706 unit cell with prismatic and frustum-shaped legs. Peltier lab turns that
 one-off study into a reusable tool; the thesis results are reproduced by the model and the comparison runs in the
 test suite ([validation report](docs/validation.md)).
 
@@ -59,7 +59,7 @@ docker compose up --build
 
 Open <http://localhost:8000> (interactive REST documentation at <http://localhost:8000/docs>).
 The example cases (thesis tables and synthetic sweeps) are loaded on first start; imported data persists in the
-`teglab-data` volume.
+`Peltier lab-data` volume.
 
 ### Development setup
 
@@ -71,7 +71,7 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
-python -m teglab --reload
+python -m Peltier lab --reload
 
 # frontend – second terminal, http://localhost:4200 (/api is proxied to :8000)
 cd frontend
@@ -88,10 +88,10 @@ ruff check . && ruff format --check .
 
 | Environment variable | Meaning | Default |
 | --- | --- | --- |
-| `TEGLAB_DB` | SQLite file for imported cases and materials | `data/teglab.db` |
-| `TEGLAB_STATIC` | directory of the built Angular app to serve on `/` | – |
-| `TEGLAB_CORS` | comma-separated allowed origins | `http://localhost:4200` |
-| `TEGLAB_SEED` | `0` = do not load the example cases | `1` |
+| `Peltier lab_DB` | SQLite file for imported cases and materials | `data/Peltier lab.db` |
+| `Peltier lab_STATIC` | directory of the built Angular app to serve on `/` | – |
+| `Peltier lab_CORS` | comma-separated allowed origins | `http://localhost:4200` |
+| `Peltier lab_SEED` | `0` = do not load the example cases | `1` |
 
 ---
 
@@ -107,7 +107,7 @@ ruff check . && ruff format --check .
 
 Probe naming conventions and details: [docs/ansys-workflow.md](docs/ansys-workflow.md).
 Example files (thesis tables and synthetic sweeps) are available on the import page and in
-[`backend/src/teglab/data/examples`](backend/src/teglab/data/examples).
+[`backend/src/Peltier lab/data/examples`](backend/src/Peltier lab/data/examples).
 
 ## The model
 
@@ -123,7 +123,7 @@ Calibrated on the prismatic reference case A0-TT only (two passive-layer factors
 correction is ≈ 0), the model reproduces the thesis tables and predicts the tapered variants without further
 fitting:
 
-| Quantity | Thesis (ANSYS) | teglab |
+| Quantity | Thesis (ANSYS) | Peltier lab |
 | --- | --- | --- |
 | A0-TT open-circuit voltage | 30.02 mV | 30.02 mV |
 | A0-TT maximum power | 13.05 mW | 13.05 mW |
@@ -137,11 +137,11 @@ discussion of contact resistance.
 
 ## Using the physics core from Python
 
-The web app is optional - `teglab` is a plain Python package:
+The web app is optional - `Peltier lab` is a plain Python package:
 
 ```python
-from teglab.design import reference_design
-from teglab.solver import build_model, max_power, solve
+from Peltier lab.design import reference_design
+from Peltier lab.solver import build_model, max_power, solve
 
 design = reference_design().with_geometry(a_hot_mm=0.98, a_cold_mm=1.4, height_mm=2.0)  # 6° taper
 model = build_model(design)
@@ -166,7 +166,7 @@ print(f"P_max = {mp.power_w * 1e3:.2f} mW at {mp.current_a:.3f} A, T_hot = {oc.t
 
 ```text
 backend/
-  src/teglab/
+  src/Peltier lab/
     solver.py            1D finite-volume pair model, operating points
     materials.py         property curves (PCHIP), zT, compatibility, library
     design.py            design schema (geometry, contacts, passives, boundary conditions)

@@ -1,9 +1,9 @@
-# teglab — thermoelectric pair workbench
+# teglab - thermoelectric pair workbench
 
 **From ANSYS Thermal-Electric results to an optimized, buildable Peltier/TEG pair.**
 Import design points from ANSYS Workbench, check them automatically, calibrate a fast 1D model on them,
 search leg geometry (including constant-volume designs) and high-temperature materials, and plan the
-soldering and the measurements in the lab — in one web app.
+soldering and the measurements in the lab - in one web app.
 
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776ab)
 ![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688)
@@ -14,7 +14,7 @@ soldering and the measurements in the lab — in one web app.
 ![Analysis page: load curves of the thesis variants A0/A5/A10 with the 1D model overlaid](docs/img/analysis.png)
 
 The project grew out of my master's thesis *Numerical analysis and optimization of Peltier thermoelectric
-modules* (Warsaw University of Technology, Faculty of Power and Aeronautical Engineering, 2026) — a 3D
+modules* (Warsaw University of Technology, Faculty of Power and Aeronautical Engineering, 2026) - a 3D
 thermal-electric FEM study of a TEC1-12706 unit cell with prismatic and frustum-shaped legs. teglab turns that
 one-off study into a reusable tool; the thesis results are reproduced by the model and the comparison runs in the
 test suite ([validation report](docs/validation.md)).
@@ -28,7 +28,7 @@ test suite ([validation report](docs/validation.md)).
 | **Data import** | Drop Workbench *Table of Design Points* CSVs, *Outline of Parameters*, Mechanical *Tabular Data* (paste) or lab CSV/XLSX. Units, decimal commas and sign conventions are normalized; repeated outputs of several analysis systems are split into cases automatically; every column gets a suggested physical meaning with a confidence score. |
 | **Analysis** | U(I), P(I), η(I), hot-face temperature, ΔT and heat balance of all cases with the 1D model overlaid; fitted P<sub>max</sub> (local parabola / spline, not just the largest sample); variant comparison in the style of thesis Table 5.3; automatic consistency checks (energy balance, sampling around P<sub>max</sub>, effective Seebeck, implied internal and contact resistance, passive layers, conductance); Roache GCI for mesh studies. |
 | **Model & calibration** | A steady-state 1D finite-volume model of one P–N pair with Joule, Peltier and Thomson heat, temperature-dependent properties, contact conductances, ceramics and electrodes, three thermal boundary conditions (fixed temperatures, fixed heat input, heat exchangers). Solves in milliseconds; least-squares calibration of lumped parameters against the imported ANSYS cases with a parity plot. |
-| **Optimizer** | Taper angle × leg height sweeps under three explicit comparison constraints — **fixed cold base** (the thesis A-series), **fixed hot base** or **constant volume of thermoelectric material** — with limits for the narrow leg end, the solder joint and the material temperature. Pareto front of power vs tellurium volume, 2D maps, and **export of the chosen designs back to ANSYS** (design-point CSV + Workbench journal). |
+| **Optimizer** | Taper angle × leg height sweeps under three explicit comparison constraints - **fixed cold base** (the thesis A-series), **fixed hot base** or **constant volume of thermoelectric material** - with limits for the narrow leg end, the solder joint and the material temperature. Pareto front of power vs tellurium volume, 2D maps, and **export of the chosen designs back to ANSYS** (design-point CSV + Workbench journal). |
 | **Materials** | Library of Bi₂Te₃, Te-free MgAgSb / Mg₃(Sb,Bi)₂, PbTe, skutterudites, half-Heuslers and SiGe (representative curves, upload your own). zT, Seebeck, resistivity, conductivity and compatibility factor; maximum efficiency and power density vs hot-side temperature; **segmented legs** with optimized segment length; Thomson contribution of the active design. |
 | **Lab planner** | Everything needed to build and measure the active design: leg count and material mass, Cu electrodes, ceramic plates, Ni barrier, solder paste mass, stencil and reflow profile (with alternatives checked against the joint temperature), heater and cooling capacity, clamp force, current set-points concentrated around I<sub>opt</sub>, shunt and voltmeter resolution, thermocouples, an uncertainty budget, a printable run sheet, a bill of materials and a measurement template that imports straight back into the app. |
 
@@ -97,7 +97,7 @@ ruff check . && ruff format --check .
 
 ## Working with ANSYS
 
-1. In Workbench, export the *Table of Design Points* (right-click → *Export Table Data as CSV*) — or paste
+1. In Workbench, export the *Table of Design Points* (right-click → *Export Table Data as CSV*) - or paste
    Mechanical *Tabular Data*.
 2. Drop it on **Data import**. Check the suggested column meanings, name the cases and give each one its boundary
    condition and geometry (the importer pre-fills what it can read from the parameters).
@@ -131,13 +131,13 @@ fitting:
 | A5 / A10 pair conductance K | 3.451 / 2.676 mW/K | 3.452 / 2.677 mW/K |
 | A10-QT at 0.8 A: voltage, ΔT across the legs | 12.38 mV, 76.16 K | 12.41 mV, 76.14 K ¹ |
 
-¹ with the contact settings that match the FEM data of that system — see the
+¹ with the contact settings that match the FEM data of that system - see the
 [validation report](docs/validation.md) for the full tables, the mesh-convergence (GCI) check and the
 discussion of contact resistance.
 
 ## Using the physics core from Python
 
-The web app is optional — `teglab` is a plain Python package:
+The web app is optional - `teglab` is a plain Python package:
 
 ```python
 from teglab.design import reference_design
@@ -188,7 +188,7 @@ docs/                    model, validation and ANSYS workflow notes, screenshots
 ## Limitations and ideas
 
 * Steady state only; no thermomechanical stress (the narrow end of a strongly tapered leg must be checked in FEM).
-* Built-in material curves are representative literature-level data, not measurements — upload your own.
+* Built-in material curves are representative literature-level data, not measurements - upload your own.
 * One P–N pair (module = n identical pairs in series); interconnect and edge effects of a full module are not modeled.
 * Next steps: transient load steps, thermal-cycling fatigue of joints, direct PyAnsys (PyMechanical) coupling.
 

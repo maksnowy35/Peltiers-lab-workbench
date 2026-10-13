@@ -1,0 +1,13 @@
+.editor {
+  position: sticky;
+  top: 64px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+@media (max-width: 980px) {
+  .editor {
+    position: static;
+    max-height: none;
+  }
+}

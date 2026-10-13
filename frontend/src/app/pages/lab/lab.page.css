@@ -1,0 +1,33 @@
+.controls {
+  position: sticky;
+  top: 64px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+.notes {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: var(--ink-2);
+  font-size: 12.5px;
+}
+
+.sheet {
+  max-height: 520px;
+  white-space: pre-wrap;
+}
+
+td .badge {
+  margin-left: 6px;
+}
+
+@media (max-width: 980px) {
+  .controls {
+    position: static;
+    max-height: none;
+  }
+}
+
+table.data td.left {
+  white-space: normal;
+}

@@ -1,0 +1,190 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <h1>Model &amp; calibration</h1>
+      <p>
+        1D finite-volume model of one P–N pair: temperature-dependent properties, Joule, Peltier and Thomson heat,
+        finite contact conductances, ceramics and electrodes. Every change is solved immediately; the active design is
+        also used by the optimizer and the lab planner.
+      </p>
+    </div>
+    <button type="button" class="btn small" (click)="resetDesign()">Reset to reference</button>
+  </div>
+
+  <div class="split">
+    <div class="card editor">
+      @if (ws.design(); as d) {
+        <app-design-editor [design]="d" [materials]="ws.materials()" (designChange)="onDesignChange($event)" />
+      } @else {
+        <p class="muted">Loading design…</p>
+      }
+    </div>
+
+    <div class="stack" [class.busy]="busy()">
+      @if (error()) {
+        <div class="notice error" role="alert">{{ error() }}</div>
+      }
+      @if (result(); as r) {
+        <div class="card">
+          <div class="kpis">
+            <app-stat label="U open circuit" [value]="r.summary.u_oc_v | n: 4 : 1000" unit="mV" />
+            <app-stat label="R internal" [value]="r.summary.r_int_ohm | n: 4 : 1000" unit="mΩ" />
+            <app-stat label="P max" [value]="r.summary.p_max_w | n: 4 : 1000" unit="mW" [hint]="'I_opt ' + (r.summary.i_opt_a | n: 3) + ' A'" />
+            <app-stat label="η at P max" [value]="r.summary.eta_at_p_max | pct: 2" [hint]="'η_max ' + (r.summary.eta_max | pct: 2)" />
+            <app-stat label="Exergy efficiency" [value]="r.summary.exergy_eta_at_p_max | pct: 1" hint="P / (Q_h · (1 − T_c/T_h))" />
+            <app-stat label="K pair" [value]="r.summary.k_pair_w_k | n: 4 : 1000" unit="mW/K" />
+            <app-stat label="ΔT legs (OC)" [value]="r.summary.dt_te_oc_k | n: 4" unit="K" />
+            <app-stat label="T hot face (OC)" [value]="r.summary.t_hot_ext_oc_c | n: 4" unit="°C" />
+            <app-stat label="R load optimum" [value]="r.summary.r_load_opt_ohm | n: 4 : 1000" unit="mΩ" />
+            <app-stat label="TE volume / P" [value]="r.summary.volume_per_power_mm3_mw | n: 3" unit="mm³/mW" />
+          </div>
+          @if (r.open_circuit.warnings.length || r.max_power.warnings.length) {
+            <div class="notice warn" style="margin-top: 12px">
+              <div>
+                @for (w of r.open_circuit.warnings; track $index) {
+                  <p class="small">{{ w }} (open circuit)</p>
+                }
+                @for (w of r.max_power.warnings; track $index) {
+                  <p class="small">{{ w }} (at P_max)</p>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="grid cols-3">
+          <div class="card"><app-plot title="Terminal voltage" xTitle="current I [A]" yTitle="U [mV]" [yScale]="1000" [traces]="sweepU()" [height]="240" /></div>
+          <div class="card"><app-plot title="Electrical power" subtitle="ring: maximum power point" xTitle="current I [A]" yTitle="P [mW]" [yScale]="1000" [traces]="sweepP()" [height]="240" /></div>
+          <div class="card"><app-plot title="Efficiency" xTitle="current I [A]" yTitle="η [%]" [yScale]="100" [traces]="sweepEta()" [height]="240" /></div>
+        </div>
+
+        <div class="grid cols-3">
+          <div class="card"><app-plot title="Temperature along the P leg" subtitle="x = 0 at the hot end" xTitle="x [mm]" yTitle="T [°C]" [traces]="profileT()" [height]="260" /></div>
+          <div class="card"><app-plot title="Joule heat density at P_max" xTitle="x [mm]" yTitle="q_J [MW/m³]" [yScale]="0.000001" [traces]="profileJoule()" [height]="260" /></div>
+          <div class="card">
+            <app-plot title="Where the temperature difference goes" subtitle="open circuit (thesis Table 4.3 view)" yTitle="ΔT [K]"
+                      [traces]="dtSplit()" [height]="260" hoverMode="closest" [layoutPatch]="dtTicks" />
+          </div>
+        </div>
+
+        <div class="grid cols-2">
+          <div class="card">
+            <div class="card-head"><h2>Energy balance at P<sub>max</sub></h2></div>
+            <table class="data">
+              <tbody>
+                <tr><td>Heat in, hot side Q<sub>h</sub></td><td>{{ r.max_power.q_hot_w | n: 5 }} W</td></tr>
+                <tr><td>Electrical power P</td><td>{{ r.max_power.power_w | n: 5 : 1000 }} mW</td></tr>
+                <tr><td>Heat out, cold side Q<sub>c</sub></td><td>{{ r.max_power.q_cold_w | n: 5 }} W</td></tr>
+                <tr><td>Side losses</td><td>{{ r.max_power.q_side_w | n: 3 : 1000 }} mW</td></tr>
+                <tr><td>Balance residual</td><td>{{ r.max_power.energy_balance_rel | n: 2 }}</td></tr>
+                <tr><td>EMF / terminal voltage</td><td>{{ r.max_power.emf_v | n: 4 : 1000 }} / {{ r.max_power.voltage_v | n: 4 : 1000 }} mV</td></tr>
+                <tr><td>Picard iterations</td><td>{{ r.max_power.iterations }}</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Resistances and limits</h2></div>
+            <table class="data">
+              <tbody>
+                <tr><td>Contacts (4 joints, electrical)</td><td>{{ r.passive.r_contact_el_ohm | n: 4 : 1000 }} mΩ</td></tr>
+                <tr><td>Cu electrodes (electrical)</td><td>{{ r.passive.r_cu_el_ohm | n: 4 : 1000 }} mΩ</td></tr>
+                <tr><td>Ceramic hot / cold (thermal)</td><td>{{ r.passive.r_ceramic_hot_k_w | n: 4 }} / {{ r.passive.r_ceramic_cold_k_w | n: 4 }} K/W</td></tr>
+                @for (m of r.material_temperatures; track $index) {
+                  <tr>
+                    <td>{{ m.leg }} · {{ m.name }} <span class="muted small">({{ m.state }})</span></td>
+                    <td>
+                      <span [class]="m.ok ? 'badge ok' : 'badge error'"><span class="ico" aria-hidden="true">{{ m.ok ? '✓' : '×' }}</span>
+                        {{ m.t_max_c | n: 4 }} °C / limit {{ m.t_limit_c | n: 3 }} °C</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      } @else if (!error()) {
+        <p class="muted">Solving…</p>
+      }
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2>Calibrate against ANSYS cases</h2>
+        <p>
+          Least-squares fit of the lumped parameters to U, Q<sub>h</sub>, Q<sub>c</sub> and temperatures of the selected cases
+          (each case uses its own geometry, boundary condition and contact setting).
+        </p>
+      </div>
+      <a class="btn small" routerLink="/import">Import cases</a>
+    </div>
+    <div class="grid cols-2">
+      <div>
+        <p class="section-title">Cases</p>
+        <div class="stack" style="gap: 6px">
+          @for (c of ws.cases(); track c.id) {
+            <label class="check small">
+              <input type="checkbox" [checked]="calibCases().includes(c.id)" (change)="toggleCalibCase(c.id, $event)" />
+              {{ c.name }} <span class="muted">({{ c.n_points }} pts)</span>
+            </label>
+          }
+        </div>
+      </div>
+      <div>
+        <p class="section-title">Parameters to fit</p>
+        <div class="stack" style="gap: 6px">
+          @for (p of params(); track p.key) {
+            <label class="check small">
+              <input type="checkbox" [checked]="fit().includes(p.key)" (change)="toggleFit(p.key, $event)" />
+              {{ p.label }}
+            </label>
+          }
+        </div>
+      </div>
+    </div>
+    <div class="row" style="margin-top: 12px">
+      <button type="button" class="btn primary" [disabled]="calibrating() || !calibCases().length || !fit().length" (click)="calibrate()">
+        {{ calibrating() ? 'Fitting…' : 'Run calibration' }}
+      </button>
+      @if (calibration(); as c) {
+        <span class="chip">RMS error {{ c.rms_before | pct: 2 }} → {{ c.rms_after | pct: 3 }}</span>
+        <span class="chip">{{ c.nfev }} model evaluations</span>
+        <button type="button" class="btn small" (click)="applyCalibration()">Apply to active design</button>
+      }
+    </div>
+    @if (calibError()) {
+      <div class="notice error" style="margin-top: 12px">{{ calibError() }}</div>
+    }
+    @if (calibration(); as c) {
+      <div class="grid cols-2" style="margin-top: 16px">
+        <div class="stack">
+          <table class="data">
+            <thead>
+              <tr><th>Parameter</th><th>Before</th><th>After</th></tr>
+            </thead>
+            <tbody>
+              @for (row of calibRows(); track row.key) {
+                <tr><td>{{ row.label }}</td><td>{{ row.before | n: 4 }}</td><td>{{ row.after | n: 4 }}</td></tr>
+              }
+            </tbody>
+          </table>
+          <table class="data">
+            <thead>
+              <tr><th>Case · quantity</th><th>RMS before</th><th>RMS after</th></tr>
+            </thead>
+            <tbody>
+              @for (row of errorRows(); track row.name) {
+                @for (it of row.items; track it.q) {
+                  <tr><td>{{ row.name }} · {{ it.q }}</td><td>{{ it.before | pct: 2 }}</td><td>{{ it.after | pct: 3 }}</td></tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-plot title="Parity: terminal voltage" subtitle="model vs data, all selected cases" xTitle="data U [mV]" yTitle="model U [mV]"
+                  [xScale]="1000" [yScale]="1000" [traces]="parity()" hoverMode="closest" [height]="300" />
+      </div>
+    }
+  </div>
+</section>

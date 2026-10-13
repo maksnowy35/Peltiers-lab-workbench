@@ -1,0 +1,337 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <h1>Lab planner</h1>
+      <p>
+        What to prepare for building and measuring the active design: material, electrodes, solder paste and reflow,
+        heater and cooling capacity, instruments, a current sweep concentrated around the expected optimum and the
+        uncertainty you should expect. Expected values come from the (calibrated) 1D model.
+      </p>
+    </div>
+    <a class="btn small" routerLink="/model">Change design</a>
+  </div>
+
+  <div class="split">
+    <div class="card controls">
+      @let f = form();
+      <p class="section-title">Build</p>
+      <div class="fields">
+        <app-num label="P–N pairs in series" step="1" [value]="f.n_pairs" (valueChange)="set('n_pairs', $event)" />
+        <app-num label="Spare legs" unit="×" step="0.05" [value]="f.spare_fraction" (valueChange)="set('spare_fraction', $event)" />
+        <label class="field">
+          <span class="field-label">Solder</span>
+          <select (change)="setSelect('solder_id', $event)">
+            @for (s of catalog()?.solders ?? []; track s.id) {
+              <option [value]="s.id" [selected]="s.id === f.solder_id">{{ s.name }} ({{ s.solidus_c }} °C)</option>
+            }
+          </select>
+        </label>
+        <app-num label="Joint thickness" unit="µm" [value]="f.joint_thickness_um" (valueChange)="set('joint_thickness_um', $event)" />
+        <app-num label="Ni barrier" unit="µm" [value]="f.ni_thickness_um" (valueChange)="set('ni_thickness_um', $event)" />
+        <label class="field">
+          <span class="field-label">Ceramic</span>
+          <select (change)="setSelect('ceramic_id', $event)">
+            @for (c of catalog()?.ceramics ?? []; track c.id) {
+              <option [value]="c.id" [selected]="c.id === f.ceramic_id">{{ c.name }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Cu on ceramic</span>
+          <select (change)="setSelect('cu_on_ceramic', $event)">
+            <option value="dbc" [selected]="f.cu_on_ceramic === 'dbc'">DBC / metallized</option>
+            <option value="soldered" [selected]="f.cu_on_ceramic === 'soldered'">soldered strips</option>
+          </select>
+        </label>
+      </div>
+      @if (solder(); as s) {
+        <p class="muted small" style="margin-top: 6px">{{ s.note }}</p>
+      }
+
+      <p class="section-title" style="margin-top: 14px">Test conditions</p>
+      <div class="fields">
+        <label class="field">
+          <span class="field-label">Mode</span>
+          <select (change)="setSelect('test_mode', $event)">
+            <option value="TT" [selected]="f.test_mode === 'TT'">fixed temperatures</option>
+            <option value="QT" [selected]="f.test_mode === 'QT'">fixed heater power</option>
+          </select>
+        </label>
+        @if (f.test_mode === 'TT') {
+          <app-num label="T hot plate" unit="°C" [value]="f.t_hot_test_c" (valueChange)="set('t_hot_test_c', $event)" />
+        } @else {
+          <app-num label="Q per pair" unit="W" [value]="f.q_hot_test_w" (valueChange)="set('q_hot_test_w', $event)" />
+        }
+        <app-num label="T cold plate" unit="°C" [value]="f.t_cold_test_c" (valueChange)="set('t_cold_test_c', $event)" />
+        <app-num label="Heater supply" unit="V" [value]="f.supply_voltage_v" (valueChange)="set('supply_voltage_v', $event)" />
+        <label class="field">
+          <span class="field-label">Cooling</span>
+          <select (change)="setSelect('coolant', $event)">
+            <option value="water" [selected]="f.coolant === 'water'">water block</option>
+            <option value="air" [selected]="f.coolant === 'air'">air heat sink</option>
+          </select>
+        </label>
+        <app-num label="Clamp pressure" unit="MPa" step="0.1" [value]="f.clamp_pressure_mpa" (valueChange)="set('clamp_pressure_mpa', $event)" />
+      </div>
+
+      <details class="more">
+        <summary>Process, losses and uncertainties</summary>
+        <div class="fields">
+          <app-num label="Saw kerf" unit="mm" [value]="f.kerf_mm" (valueChange)="set('kerf_mm', $event)" />
+          <app-num label="Fillet factor" step="0.05" [value]="f.fillet_factor" (valueChange)="set('fillet_factor', $event)" />
+          <app-num label="Paste metal (mass)" step="0.005" [value]="f.paste_metal_mass_fraction" (valueChange)="set('paste_metal_mass_fraction', $event)" />
+          <app-num label="Joint margin" unit="K" [value]="f.joint_margin_k" (valueChange)="set('joint_margin_k', $event)" />
+          <app-num label="Heater block area" unit="cm²" [value]="f.heater_block_area_cm2" (valueChange)="set('heater_block_area_cm2', $event)" />
+          <app-num label="Emissivity" step="0.05" [value]="f.emissivity" (valueChange)="set('emissivity', $event)" />
+          <app-num label="Convection h" unit="W/(m²·K)" [value]="f.h_conv" (valueChange)="set('h_conv', $event)" />
+          <app-num label="Insulation loss" unit="× Q" step="0.05" [value]="f.insulation_loss_fraction" (valueChange)="set('insulation_loss_fraction', $event)" />
+          <app-num label="Heater safety" unit="×" step="0.1" [value]="f.heater_safety_factor" (valueChange)="set('heater_safety_factor', $event)" />
+          <app-num label="Ambient" unit="°C" [value]="f.t_ambient_c" (valueChange)="set('t_ambient_c', $event)" />
+          <app-num label="σ temperature" unit="K" step="0.1" [value]="f.sigma_t_k" (valueChange)="set('sigma_t_k', $event)" />
+          <app-num label="σ voltage (rel.)" step="0.0001" [value]="f.sigma_u_rel" (valueChange)="set('sigma_u_rel', $event)" />
+          <app-num label="σ current (rel.)" step="0.001" [value]="f.sigma_i_rel" (valueChange)="set('sigma_i_rel', $event)" />
+          <app-num label="σ heat flow (rel.)" step="0.01" [value]="f.sigma_q_rel" (valueChange)="set('sigma_q_rel', $event)" />
+        </div>
+      </details>
+
+      <div class="row" style="margin-top: 14px">
+        <button type="button" class="btn primary" [disabled]="busy()" (click)="run()">{{ busy() ? 'Planning…' : 'Update plan' }}</button>
+      </div>
+    </div>
+
+    <div class="stack" [class.busy]="busy()">
+      @if (error()) {
+        <div class="notice error" role="alert">{{ error() }}</div>
+      }
+      @if (plan(); as p) {
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Expected results</h2>
+              <p>{{ p.design_name }} · {{ p.expected.module.n_pairs }} pair(s) · {{ p.test.mode === 'TT' ? 'fixed temperatures' : 'fixed heater power' }}</p>
+            </div>
+            <div class="row">
+              <button type="button" class="btn small" (click)="downloadSheet()">Run sheet (.md)</button>
+              <button type="button" class="btn small" (click)="downloadBom()">BOM (.csv)</button>
+              <button type="button" class="btn small" (click)="downloadTemplate()">Measurement template</button>
+            </div>
+          </div>
+          <div class="kpis">
+            <app-stat label="U open circuit" [value]="p.expected.module.u_oc_v | n: 4 : 1000" unit="mV" [hint]="(p.expected.per_pair.u_oc_v | n: 4 : 1000) + ' mV per pair'" />
+            <app-stat label="R internal" [value]="p.expected.module.r_int_ohm | n: 4 : 1000" unit="mΩ" />
+            <app-stat label="P max" [value]="p.expected.module.p_max_w | n: 4 : 1000" unit="mW" [hint]="'at ' + (p.expected.per_pair.i_opt_a | n: 3) + ' A'" />
+            <app-stat label="η at P max" [value]="p.expected.per_pair.eta_at_p_max | pct: 2" />
+            <app-stat label="Hot plate" [value]="p.expected.per_pair.t_hot_ext_c | n: 4" unit="°C" />
+            <app-stat label="Joint (hot Cu)" [value]="p.solder.t_joint_max_c | n: 4" unit="°C" />
+          </div>
+        </div>
+
+        <div class="grid cols-2">
+          <div class="card"><app-plot title="Expected terminal voltage" xTitle="current [A]" yTitle="U [mV]" [yScale]="1000" [traces]="sweepU()" [height]="220" /></div>
+          <div class="card"><app-plot title="Expected power" xTitle="current [A]" yTitle="P [mW]" [yScale]="1000" [traces]="sweepP()" [height]="220" /></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Parts and material</h2></div>
+          <div class="table-wrap">
+            <table class="data">
+              <thead>
+                <tr><th>Item</th><th class="left">Specification</th><th>Quantity</th></tr>
+              </thead>
+              <tbody>
+                @for (leg of p.build.legs; track leg.type) {
+                  <tr>
+                    <td>{{ leg.type }} legs @if (leg.fragile) {<span class="badge warn"><span class="ico" aria-hidden="true">!</span>fragile</span>}</td>
+                    <td class="left">{{ leg.materials.join(' + ') }} · {{ leg.a_hot_mm }} → {{ leg.a_cold_mm }} mm × {{ leg.height_mm }} mm · θ {{ leg.theta_deg }}°</td>
+                    <td>{{ leg.count }} + {{ leg.spares }} spare</td>
+                  </tr>
+                  <tr>
+                    <td>{{ leg.type }} material</td>
+                    <td class="left">incl. saw kerf and spares ({{ leg.raw_volume_per_leg_mm3 }} mm³ raw per leg)</td>
+                    <td>{{ leg.material_mass_g }} g</td>
+                  </tr>
+                }
+                <tr>
+                  <td>Cu electrodes</td>
+                  <td class="left">{{ p.build.electrodes.length_mm }} × {{ p.build.electrodes.width_mm }} × {{ p.build.electrodes.thickness_mm }} mm</td>
+                  <td>{{ p.build.electrodes.count }} pcs ({{ p.build.electrodes.cu_mass_g }} g)</td>
+                </tr>
+                <tr>
+                  <td>Ceramic plates</td>
+                  <td class="left">{{ p.build.ceramic.material }} · {{ p.build.ceramic.width_mm }} × {{ p.build.ceramic.length_mm }} × {{ p.build.ceramic.thickness_mm }} mm</td>
+                  <td>{{ p.build.ceramic.plates }} pcs</td>
+                </tr>
+                <tr>
+                  <td>Ni diffusion barrier</td>
+                  <td class="left">{{ p.build.nickel.thickness_um }} µm on all leg end faces</td>
+                  <td>{{ p.build.nickel.area_mm2 }} mm²</td>
+                </tr>
+                <tr>
+                  <td>Solder paste</td>
+                  <td class="left">{{ p.solder.alloy }} · {{ p.solder.metal_mass_g }} g metal in {{ p.solder.joints_te_cu + p.solder.joints_cu_ceramic }} joints · stencil ≈ {{ p.solder.stencil_thickness_um }} µm</td>
+                  <td>{{ p.solder.paste_mass_g }} g (order ≥ {{ p.solder.paste_with_waste_g }} g)</td>
+                </tr>
+                <tr>
+                  <td>Layout</td>
+                  <td class="left">{{ p.build.layout.rows }} × {{ p.build.layout.cols }} pairs, pitch {{ p.build.layout.pitch_mm }} mm</td>
+                  <td>clamp {{ p.clamping.force_n }} N</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="grid cols-2">
+          <div class="card">
+            <div class="card-head">
+              <h2>Solder and reflow</h2>
+              @if (p.solder.ok) {
+                <span class="badge ok"><span class="ico" aria-hidden="true">✓</span>margin {{ p.solder.margin_to_solidus_k }} K</span>
+              } @else {
+                <span class="badge error"><span class="ico" aria-hidden="true">×</span>margin {{ p.solder.margin_to_solidus_k }} K</span>
+              }
+            </div>
+            <table class="data">
+              <tbody>
+                <tr><td>Soak</td><td>{{ p.solder.reflow.soak_c[0] }}–{{ p.solder.reflow.soak_c[1] }} °C</td></tr>
+                <tr><td>Peak</td><td>{{ p.solder.reflow.peak_c[0] }}–{{ p.solder.reflow.peak_c[1] }} °C</td></tr>
+                <tr><td>Time above liquidus</td><td>{{ p.solder.reflow.time_above_liquidus_s[0] }}–{{ p.solder.reflow.time_above_liquidus_s[1] }} s</td></tr>
+                <tr><td>Atmosphere</td><td>{{ p.solder.reflow.atmosphere }}</td></tr>
+                <tr><td>Homologous temperature in test</td><td>{{ p.solder.homologous_temperature }}</td></tr>
+              </tbody>
+            </table>
+            @for (w of p.solder.warnings; track $index) {
+              <div class="notice warn small" style="margin-top: 8px">{{ w }}</div>
+            }
+            <p class="section-title" style="margin-top: 12px">Other alloys at this joint temperature</p>
+            <div class="table-wrap">
+              <table class="data">
+                <thead>
+                  <tr><th>Alloy</th><th>Solidus</th><th>Margin</th><th>T/T<sub>m</sub></th><th></th></tr>
+                </thead>
+                <tbody>
+                  @for (a of p.solder.alternatives; track a.id) {
+                    <tr [class.highlight]="a.id === form().solder_id">
+                      <td>{{ a.name }}{{ a.pb_free ? '' : ' (Pb)' }}</td>
+                      <td>{{ a.solidus_c }} °C</td>
+                      <td>{{ a.margin_k }} K</td>
+                      <td>{{ a.homologous }}</td>
+                      <td>
+                        @if (a.ok) {
+                          <span class="badge ok"><span class="ico" aria-hidden="true">✓</span>ok</span>
+                        } @else {
+                          <span class="badge error"><span class="ico" aria-hidden="true">×</span>too low</span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="stack">
+            <div class="card">
+              <div class="card-head"><h2>Heater</h2></div>
+              <table class="data">
+                <tbody>
+                  <tr><td>Into the pairs</td><td>{{ p.heater.q_pairs_w | n: 3 }} W</td></tr>
+                  <tr><td>Radiation + convection of the block</td><td>{{ p.heater.q_radiation_w + p.heater.q_convection_w | n: 3 }} W</td></tr>
+                  <tr><td>Insulation / fixture losses</td><td>{{ p.heater.q_insulation_w | n: 3 }} W</td></tr>
+                  <tr><td><strong>Rated heater power</strong></td><td><strong>{{ p.heater.rated_power_w | n: 3 }} W</strong></td></tr>
+                  <tr><td>At {{ p.heater.supply_v }} V</td><td>{{ p.heater.resistance_ohm | n: 3 }} Ω · {{ p.heater.current_a | n: 3 }} A</td></tr>
+                  <tr><td>Block temperature</td><td>{{ p.heater.block_temperature_c | n: 4 }} °C</td></tr>
+                </tbody>
+              </table>
+              <p class="muted small" style="margin-top: 6px">{{ p.heater.control }}</p>
+            </div>
+            <div class="card">
+              <div class="card-head"><h2>Cooling</h2></div>
+              <table class="data">
+                <tbody>
+                  <tr><td>Heat to reject</td><td>{{ p.cooling.q_reject_w | n: 3 }} W</td></tr>
+                  @if (p.cooling.flow_ml_min !== undefined) {
+                    <tr><td>Water flow for ΔT = {{ p.cooling.coolant_dt_k }} K</td><td>{{ p.cooling.flow_ml_min | n: 3 }} mL/min</td></tr>
+                  }
+                  @if (p.cooling.max_heatsink_r_k_w !== undefined) {
+                    <tr><td>Max heat-sink resistance</td><td>{{ p.cooling.max_heatsink_r_k_w | n: 3 }} K/W</td></tr>
+                  }
+                </tbody>
+              </table>
+              <p class="muted small" style="margin-top: 6px">{{ p.cooling.note }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid cols-2">
+          <div class="card">
+            <div class="card-head"><h2>Electrical measurement</h2></div>
+            <p class="small">{{ p.electrical.method }}</p>
+            <p class="section-title" style="margin-top: 10px">Current set-points [A] – dense around I<sub>opt</sub></p>
+            <div class="row">
+              @for (i of p.electrical.current_setpoints_a; track $index) {
+                <span class="chip num">{{ i }}</span>
+              }
+            </div>
+            <p class="section-title" style="margin-top: 10px">…or load resistors [mΩ]</p>
+            <div class="row">
+              @for (r of p.electrical.load_resistances_ohm; track $index) {
+                <span class="chip num">{{ r * 1000 | n: 3 }}</span>
+              }
+            </div>
+            <table class="data" style="margin-top: 10px">
+              <tbody>
+                <tr><td>Current shunt (4-terminal)</td><td>{{ p.electrical.shunt_ohm }} Ω · {{ p.electrical.shunt_power_w | n: 2 : 1000 }} mW</td></tr>
+                <tr><td>Voltmeter resolution needed</td><td>≤ {{ p.electrical.voltmeter_resolution_v * 1000000 | n: 2 }} µV</td></tr>
+              </tbody>
+            </table>
+            <ul class="notes">
+              @for (n of p.electrical.notes; track $index) {
+                <li>{{ n }}</li>
+              }
+            </ul>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Temperatures and uncertainty</h2></div>
+            <table class="data">
+              <thead>
+                <tr><th>Thermocouple</th><th>Type</th><th>Count</th><th>Expected</th></tr>
+              </thead>
+              <tbody>
+                @for (t of p.thermocouples; track t.position) {
+                  <tr><td>{{ t.position }}</td><td>{{ t.type }}</td><td>{{ t.count }}</td><td>{{ t.expected_c !== undefined ? (t.expected_c | n: 4) + ' °C' : '–' }}</td></tr>
+                }
+              </tbody>
+            </table>
+            <table class="data" style="margin-top: 12px">
+              <thead>
+                <tr><th>Quantity (1σ, relative)</th><th>Uncertainty</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Electrical power P = U·I</td><td>{{ p.uncertainty.rel_power | pct: 2 }}</td></tr>
+                <tr><td>Efficiency P / Q<sub>h</sub></td><td>{{ p.uncertainty.rel_efficiency | pct: 2 }}</td></tr>
+                <tr><td>α<sub>eff</sub> = U<sub>oc</sub> / ΔT (plates)</td><td>{{ p.uncertainty.rel_alpha_eff | pct: 2 }}</td></tr>
+                <tr><td>P<sub>max</sub> from ΔT error (P ∝ ΔT²)</td><td>{{ p.uncertainty.rel_power_from_temperature | pct: 2 }}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Run sheet</h2>
+              <p>Printable procedure; the measurement template imports back on the Data import page for comparison with ANSYS and the model.</p>
+            </div>
+            <button type="button" class="btn small" (click)="showSheet.set(!showSheet())">{{ showSheet() ? 'Hide' : 'Show' }}</button>
+          </div>
+          @if (showSheet()) {
+            <pre class="sheet">{{ p.run_sheet_md }}</pre>
+          }
+        </div>
+      } @else if (busy()) {
+        <p class="muted">Planning…</p>
+      }
+    </div>
+  </div>
+</section>

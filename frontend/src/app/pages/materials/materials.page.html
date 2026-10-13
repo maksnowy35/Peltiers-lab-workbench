@@ -1,0 +1,240 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <h1>Materials</h1>
+      <p>
+        Temperature-dependent α(T), ρ(T), κ(T) for near-room-temperature and high-temperature thermoelectrics. The
+        built-in curves are <strong>representative</strong> values for each material class – good for screening and
+        for learning the trends; upload measured data before drawing conclusions.
+      </p>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="notice error" role="alert">{{ error() }}</div>
+  }
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2>Library</h2>
+        <p>Select up to 6 materials for the property charts – the color keys here are the legend of the charts below. The limit is the recommended maximum operating temperature.</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Material</th>
+            <th class="left">Type</th>
+            <th class="left">Family</th>
+            <th>Data range [°C]</th>
+            <th>Limit [°C]</th>
+            <th>zT peak</th>
+            <th>Density [g/cm³]</th>
+            <th class="left">Source</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (m of ws.materials(); track m.id) {
+            <tr>
+              <td class="left">
+                <label class="check">
+                  <input type="checkbox" [checked]="slotOf(m.id) !== null" (change)="toggleMaterial(m.id)"
+                         [disabled]="slotOf(m.id) === null && selectedIds().length >= 6" />
+                  @if (slotOf(m.id) !== null) {
+                    <span class="swatch" [attr.data-slot]="slotOf(m.id)"></span>
+                  }
+                  {{ m.name }}
+                </label>
+              </td>
+              <td class="left">{{ m.kind === 'p' ? 'p-type' : 'n-type' }}</td>
+              <td class="left">{{ m.family }}</td>
+              <td>{{ m.constant ? 'constant' : (m.t_min_c | n: 3) + ' – ' + (m.t_max_c | n: 3) }}</td>
+              <td>{{ m.t_limit_c | n: 3 }}</td>
+              <td>{{ m.zt_peak | n: 2 }}</td>
+              <td>{{ m.density_g_cm3 }}</td>
+              <td class="left small">{{ m.source }}</td>
+              <td>
+                @if (m.id.startsWith('user_')) {
+                  <button type="button" class="btn ghost small" (click)="remove(m)">delete</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid cols-3">
+    <div class="card"><app-plot [legend]="false" title="Figure of merit zT" xTitle="T [°C]" yTitle="zT" [traces]="ztTraces()" [height]="260" /></div>
+    <div class="card"><app-plot [legend]="false" title="Seebeck coefficient" xTitle="T [°C]" yTitle="α [µV/K]" [traces]="alphaTraces()" [height]="260" /></div>
+    <div class="card"><app-plot [legend]="false" title="Compatibility factor" subtitle="segment materials whose s differs by < 2×" xTitle="T [°C]" yTitle="s [1/V]" [traces]="sTraces()" [height]="260" /></div>
+    <div class="card"><app-plot [legend]="false" title="Electrical resistivity" xTitle="T [°C]" yTitle="ρ [µΩ·m]" [traces]="rhoTraces()" [height]="260" /></div>
+    <div class="card"><app-plot [legend]="false" title="Thermal conductivity" xTitle="T [°C]" yTitle="κ [W/(m·K)]" [traces]="kappaTraces()" [height]="260" /></div>
+    <div class="card upload">
+      <div class="card-head"><h2>Add measured data</h2></div>
+      <p class="small muted">CSV columns <code>T_C, alpha_uV_K, rho_uOhm_m, kappa</code> (also <code>T_K</code>, <code>sigma_S_m</code>).</p>
+      <input type="file" accept=".csv,.txt" (change)="onUploadFile($event)" />
+      <div class="fields" style="margin-top: 8px">
+        <label class="field">
+          <span class="field-label">Name</span>
+          <input type="text" [value]="uploadName()" (change)="setUploadName($event)" />
+        </label>
+        <label class="field">
+          <span class="field-label">Type</span>
+          <select (change)="setUploadKind($event)">
+            <option value="p" [selected]="uploadKind() === 'p'">p-type</option>
+            <option value="n" [selected]="uploadKind() === 'n'">n-type</option>
+          </select>
+        </label>
+        <app-num label="Limit" unit="°C" [value]="uploadLimit()" (valueChange)="uploadLimit.set($event)" />
+        <app-num label="Density" unit="g/cm³" [value]="uploadDensity()" (valueChange)="uploadDensity.set($event)" />
+      </div>
+      <div class="row" style="margin-top: 10px">
+        <button type="button" class="btn primary small" [disabled]="!uploadFile()" (click)="upload()">Add material</button>
+      </div>
+      @if (uploadMsg()) {
+        <p class="small" style="margin-top: 8px">{{ uploadMsg() }}</p>
+      }
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2>Which material for which heat source?</h2>
+        <p>Maximum efficiency of a P/N pair (prism legs, optimal area ratio, junction temperatures fixed) vs hot-side temperature.</p>
+      </div>
+    </div>
+    <div class="row">
+      @for (p of pairs; track p.key; let i = $index) {
+        <label class="check small pair">
+          <input type="checkbox" [checked]="pairKeys().includes(p.key)" (change)="togglePair(p.key)" />
+          <span class="swatch" [attr.data-slot]="i"></span>{{ p.label }}
+        </label>
+      }
+    </div>
+    <div class="fields" style="margin-top: 10px; max-width: 640px">
+      <app-num label="T cold" unit="°C" [value]="tCold()" (valueChange)="tCold.set($event)" />
+      <app-num label="T hot from" unit="°C" [value]="tHotFrom()" (valueChange)="tHotFrom.set($event)" />
+      <app-num label="T hot to" unit="°C" [value]="tHotTo()" (valueChange)="tHotTo.set($event)" />
+      <app-num label="step" unit="K" [value]="tHotStep()" (valueChange)="tHotStep.set($event)" />
+    </div>
+    <div class="row" style="margin-top: 10px">
+      <button type="button" class="btn primary" [disabled]="effBusy()" (click)="runEfficiency()">{{ effBusy() ? 'Computing…' : 'Compute' }}</button>
+      <span class="muted small">Colors follow the list above · hollow markers: up to 100 K above the material's temperature limit (what-if only)</span>
+    </div>
+    @if (eff()) {
+      <div class="grid cols-2" style="margin-top: 12px" [class.busy]="effBusy()">
+        <app-plot [legend]="false" title="Maximum efficiency" xTitle="T hot [°C]" yTitle="η_max [%]" [yScale]="100" [traces]="effTraces()" [height]="320" />
+        <app-plot [legend]="false" title="Power density at P_max" subtitle="per leg cross-section, H = 1.4 mm" xTitle="T hot [°C]" yTitle="P/A [W/cm²]"
+                  [traces]="densityTraces()" [height]="320" />
+      </div>
+    }
+  </div>
+
+  <div class="grid cols-2">
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>Segmented legs</h2>
+          <p>High-temperature material at the hot end, Bi2Te3 (or another) at the cold end; the interface must stay below the cold material's limit.</p>
+        </div>
+      </div>
+      <div class="fields">
+        <label class="field">
+          <span class="field-label">P hot segment</span>
+          <select (change)="setSel('pHot', $event)">
+            @for (m of pMaterials(); track m.id) {
+              <option [value]="m.id" [selected]="m.id === segPHot()">{{ m.name }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">N hot segment</span>
+          <select (change)="setSel('nHot', $event)">
+            @for (m of nMaterials(); track m.id) {
+              <option [value]="m.id" [selected]="m.id === segNHot()">{{ m.name }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">P cold segment</span>
+          <select (change)="setSel('pCold', $event)">
+            @for (m of pMaterials(); track m.id) {
+              <option [value]="m.id" [selected]="m.id === segPCold()">{{ m.name }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">N cold segment</span>
+          <select (change)="setSel('nCold', $event)">
+            @for (m of nMaterials(); track m.id) {
+              <option [value]="m.id" [selected]="m.id === segNCold()">{{ m.name }}</option>
+            }
+          </select>
+        </label>
+        <app-num label="T hot" unit="°C" [value]="segTHot()" (valueChange)="segTHot.set($event)" />
+        <app-num label="T cold" unit="°C" [value]="segTCold()" (valueChange)="segTCold.set($event)" />
+        <app-num label="Leg height" unit="mm" [value]="segHeight()" (valueChange)="segHeight.set($event)" />
+      </div>
+      <div class="row" style="margin-top: 10px">
+        <button type="button" class="btn primary" [disabled]="segBusy()" (click)="runSegmented()">{{ segBusy() ? 'Computing…' : 'Optimize segment length' }}</button>
+      </div>
+      @if (seg(); as r) {
+        @if (r.optimum; as o) {
+          <div class="kpis" style="margin-top: 12px">
+            <app-stat label="Best hot-segment share" [value]="o.fraction_hot | pct: 0" />
+            <app-stat label="η max" [value]="o.eta_max | pct: 2" />
+            <app-stat label="Interface T" [value]="o.t_interface_c | n: 4" unit="°C" />
+          </div>
+        } @else {
+          <div class="notice warn" style="margin-top: 12px">No segment length keeps both materials within their limits.</div>
+        }
+        <div class="grid cols-2" style="margin-top: 12px">
+          <app-plot title="Maximum efficiency" xTitle="hot segment share of H" yTitle="η_max [%]" [yScale]="100" [traces]="segTraces()"
+                    hoverMode="closest" [height]="260" />
+          <app-plot title="Interface temperature" subtitle="line: cold-segment limit" xTitle="hot segment share of H" yTitle="T [°C]"
+                    [traces]="interfaceTraces()" [shapes]="interfaceLimit()" [height]="260" />
+        </div>
+      }
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>Thomson contribution (active design)</h2>
+          <p>
+            Full α(T) versus α frozen at its mean over each leg's temperature range – same open-circuit voltage, no
+            distributed Thomson heat. With the constant thesis properties both are identical (τ = 0).
+          </p>
+        </div>
+      </div>
+      <p class="small muted">Active design: {{ ws.designLabel() }}</p>
+      <div class="row" style="margin-top: 8px">
+        <button type="button" class="btn primary" [disabled]="thomsonBusy()" (click)="runThomson()">{{ thomsonBusy() ? 'Computing…' : 'Compare' }}</button>
+      </div>
+      @if (thomson(); as t) {
+        <table class="data" style="margin-top: 12px">
+          <thead>
+            <tr><th></th><th>with Thomson</th><th>α frozen</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>P max [mW]</td><td>{{ t.with_thomson.p_max_w | n: 5 : 1000 }}</td><td>{{ t.without_thomson.p_max_w | n: 5 : 1000 }}</td></tr>
+            <tr><td>η max</td><td>{{ t.with_thomson.eta_max | pct: 3 }}</td><td>{{ t.without_thomson.eta_max | pct: 3 }}</td></tr>
+            <tr><td>U open circuit [mV]</td><td>{{ t.with_thomson.u_oc_v | n: 5 : 1000 }}</td><td>{{ t.without_thomson.u_oc_v | n: 5 : 1000 }}</td></tr>
+            <tr><td>Q_h at P max [W]</td><td>{{ t.with_thomson.q_hot_pmax_w | n: 5 }}</td><td>{{ t.without_thomson.q_hot_pmax_w | n: 5 }}</td></tr>
+          </tbody>
+        </table>
+        <div class="row" style="margin-top: 10px">
+          <span class="chip">ΔP {{ t.delta_p_rel | pct: 2 : true }}</span>
+          <span class="chip">Δη {{ t.delta_eta_rel | pct: 2 : true }}</span>
+          <span class="chip">Thomson heat {{ t.thomson_heat_w | n: 3 : 1000 }} mW</span>
+        </div>
+      }
+    </div>
+  </div>
+</section>

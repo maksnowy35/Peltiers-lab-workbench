@@ -1,0 +1,13 @@
+#
+# teglab example - thesis BC-QT results written as one Workbench table with three systems (A0, A5, A10).
+# Only numbers printed in the thesis: Table 5.4 (I = 0), Table 3.5 (A10, I = 0.8 A, mesh C1), Fig. 5.1
+# (T_max at I = 1.6 A) and Section 5.3 (cold leg-end temperatures). Empty cells = not reported.
+# The parameters defined in the project are:
+# P1 - Current Magnitude, P2 - Voltage Probe Electric Voltage, P3 - Reaction Probe 2 Heat, P4 - T_hot_face Average, P5 - Temperature Average, P6 - T_leg_cold_avg Average, P7 - T_max_global Maximum, P8 - Voltage Probe Electric Voltage, P9 - Reaction Probe 2 Heat, P10 - T_hot_face Average, P11 - Temperature Average, P12 - T_leg_cold_avg Average, P13 - T_max_global Maximum, P14 - Voltage Probe Electric Voltage, P15 - Reaction Probe 2 Heat, P16 - T_hot_face Average, P17 - Temperature Average, P18 - T_leg_cold_avg Average, P19 - T_max_global Maximum
+#
+# The following header line defines the name of the columns by reference to the parameters.
+Name,P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12,P13,P14,P15,P16,P17,P18,P19
+Units,A,V,W,C,C,C,C,V,W,C,C,C,C,V,W,C,C,C,C
+DP 0,0,0.030024,,100.04,97.2,22.09,,0.036531,,114.74,112.66,21.34,,0.047137,,141.31,139.13,21.33,
+DP 1,0.8,,,,,,,,,,,,,0.012384,-0.30505,,97.45,21.291,99.607
+DP 2,1.6,,,,,,55.62,,,,,,60.03,,,,,,70.56

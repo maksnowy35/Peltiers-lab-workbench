@@ -1,0 +1,13 @@
+# docker compose up --build   ->   http://localhost:8000  (UI + API, docs at /docs)
+services:
+  teglab:
+    build: .
+    image: teglab:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - teglab-data:/data
+    restart: unless-stopped
+
+volumes:
+  teglab-data:

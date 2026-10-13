@@ -1,0 +1,14 @@
+#
+# teglab example - values printed in the thesis, Tables 4.2–4.4 (case A0-TT, 100 C / 20 C, mesh C1).
+# U follows the thesis regression U = 30.02 mV - 17.26 mOhm * I (reproduces the P column of Table 4.4).
+# Leg-end temperatures at I = 0 from Table 4.3 (2.84 K hot / 2.09 K cold passive drop).
+# The parameters defined in the project are:
+# P1 - Current Magnitude, P2 - Reaction Probe Heat, P3 - Reaction Probe 2 Heat, P4 - Voltage Probe Electric Voltage, P5 - Temperature Average, P6 - T_leg_cold_avg Average
+#
+# The following header line defines the name of the columns by reference to the parameters.
+Name,P1,P2,P3,P4,P5,P6
+Units,A,W,W,V,C,C
+DP 0,0,0.31519,-0.31519,0.030020,97.16,22.09
+DP 1,0.4,0.36971,-0.36046,0.023116,,
+DP 2,0.8,0.42145,-0.40848,0.016212,,
+DP 3,1.8,0.53880,-0.54068,-0.001048,,

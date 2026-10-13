@@ -1,0 +1,159 @@
+@let d = design();
+
+<div class="block">
+  <label class="field">
+    <span class="field-label">Design name</span>
+    <input class="name-input" type="text" [value]="d.name" (change)="setName($event)" />
+  </label>
+  <div class="row" style="margin-top: 8px">
+    <span class="muted small">Thesis geometry:</span>
+    <div class="variants">
+      @for (v of variants; track v.name) {
+        <button type="button" class="btn small" (click)="applyVariant(v.theta)">{{ v.name }}</button>
+      }
+    </div>
+  </div>
+</div>
+
+<div class="block">
+  <p class="section-title">Leg geometry</p>
+  <div class="fields">
+    <app-num label="Height H" unit="mm" step="0.05" [value]="d.height_mm" (valueChange)="setHeight($event)" />
+    <app-num label="Cold base a_c" unit="mm" step="0.05" [value]="d.p_leg.a_cold_mm" (valueChange)="setColdBase($event)" />
+    <app-num label="Taper θ (narrow end hot)" unit="°" step="0.5" [value]="+theta().toFixed(3)" (valueChange)="setTaper($event)" />
+    <app-num label="N/P area ratio" step="0.05" [value]="+areaRatio().toFixed(4)" (valueChange)="setAreaRatio($event)" />
+  </div>
+  <div class="derived">
+    <span class="chip">a_h {{ d.p_leg.a_hot_mm | n: 4 }} mm</span>
+    <span class="chip">V leg {{ volumes().p | n: 4 }} mm³</span>
+    <span class="chip">V pair {{ volumes().total | n: 4 }} mm³</span>
+  </div>
+  <details class="more">
+    <summary>Individual leg sides</summary>
+    <div class="fields">
+      <app-num label="P a_hot" unit="mm" [value]="d.p_leg.a_hot_mm" (valueChange)="setLegSide('p_leg', 'a_hot_mm', $event)" />
+      <app-num label="P a_cold" unit="mm" [value]="d.p_leg.a_cold_mm" (valueChange)="setLegSide('p_leg', 'a_cold_mm', $event)" />
+      <app-num label="N a_hot" unit="mm" [value]="d.n_leg.a_hot_mm" (valueChange)="setLegSide('n_leg', 'a_hot_mm', $event)" />
+      <app-num label="N a_cold" unit="mm" [value]="d.n_leg.a_cold_mm" (valueChange)="setLegSide('n_leg', 'a_cold_mm', $event)" />
+    </div>
+  </details>
+</div>
+
+<div class="block">
+  <p class="section-title">Materials (hot end first)</p>
+  @for (leg of ['p_leg', 'n_leg']; track leg) {
+    @let legKey = leg === 'p_leg' ? 'p_leg' : 'n_leg';
+    <div class="leg-title">
+      <strong>{{ legKey === 'p_leg' ? 'P leg' : 'N leg' }}</strong>
+      <button type="button" class="btn ghost small" [disabled]="d[legKey].segments.length >= 3" (click)="addSegment(legKey)">
+        + segment
+      </button>
+    </div>
+    <div class="stack" style="gap: 6px">
+      @for (s of d[legKey].segments; track $index; let i = $index) {
+        <div class="seg-row">
+          <label class="field">
+            @if (i === 0) {
+              <span class="field-label">Material</span>
+            }
+            <select [value]="s.material" (change)="setSegmentMaterial(legKey, i, $event)">
+              @for (m of legKey === 'p_leg' ? pMaterials() : nMaterials(); track m.id) {
+                <option [value]="m.id" [selected]="m.id === s.material">{{ m.name }}</option>
+              }
+            </select>
+          </label>
+          <app-num [label]="i === 0 ? 'Fraction' : ''" step="0.05" [value]="+s.fraction.toFixed(3)"
+                   [disabled]="d[legKey].segments.length < 2" (valueChange)="setSegmentFraction(legKey, i, $event)" />
+          <button type="button" class="btn ghost small" aria-label="Remove segment"
+                  [disabled]="d[legKey].segments.length < 2" (click)="removeSegment(legKey, i)">×</button>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<div class="block">
+  <p class="section-title">Contacts (Ni + solder joints)</p>
+  <label class="check">
+    <input type="checkbox" [checked]="d.contacts.active" (change)="toggleContacts($event)" />
+    Finite contact conductance (TCC/ECC)
+  </label>
+  <div class="fields" style="margin-top: 8px">
+    <app-num label="TCC" unit="W/(m²·K)" [value]="d.contacts.tcc" [disabled]="!d.contacts.active"
+             (valueChange)="setContacts('tcc', $event)" />
+    <app-num label="ECC" unit="S/m²" [value]="d.contacts.ecc" [disabled]="!d.contacts.active"
+             (valueChange)="setContacts('ecc', $event)" />
+  </div>
+</div>
+
+<div class="block">
+  <p class="section-title">Thermal boundary conditions</p>
+  <div class="row">
+    <span class="field-label">Hot side</span>
+    <div class="seg" role="group" aria-label="Hot side condition">
+      <button type="button" [class.on]="d.boundary.hot_mode === 'T'" (click)="setHotMode('T')">Temperature</button>
+      <button type="button" [class.on]="d.boundary.hot_mode === 'Q'" (click)="setHotMode('Q')">Heat flow</button>
+      <button type="button" [class.on]="d.boundary.hot_mode === 'HX'" (click)="setHotMode('HX')">Exchanger</button>
+    </div>
+  </div>
+  <div class="fields" style="margin-top: 8px">
+    @switch (d.boundary.hot_mode) {
+      @case ('T') {
+        <app-num label="T hot face" unit="°C" [value]="d.boundary.t_hot_c" (valueChange)="setBoundary('t_hot_c', $event)" />
+      }
+      @case ('Q') {
+        <app-num label="Q_h per pair" unit="W" step="0.01" [value]="d.boundary.q_hot_w" (valueChange)="setBoundary('q_hot_w', $event)" />
+      }
+      @case ('HX') {
+        <app-num label="Source T" unit="°C" [value]="d.boundary.t_source_c" (valueChange)="setBoundary('t_source_c', $event)" />
+        <app-num label="R source" unit="K/W" hint="exchanger share per pair" [value]="d.boundary.r_source_k_w"
+                 (valueChange)="setBoundary('r_source_k_w', $event)" />
+      }
+    }
+  </div>
+  <div class="row" style="margin-top: 10px">
+    <span class="field-label">Cold side</span>
+    <div class="seg" role="group" aria-label="Cold side condition">
+      <button type="button" [class.on]="d.boundary.cold_mode === 'T'" (click)="setColdMode('T')">Temperature</button>
+      <button type="button" [class.on]="d.boundary.cold_mode === 'HX'" (click)="setColdMode('HX')">Heat sink</button>
+    </div>
+  </div>
+  <div class="fields" style="margin-top: 8px">
+    @if (d.boundary.cold_mode === 'T') {
+      <app-num label="T cold face" unit="°C" [value]="d.boundary.t_cold_c" (valueChange)="setBoundary('t_cold_c', $event)" />
+    } @else {
+      <app-num label="Sink T" unit="°C" [value]="d.boundary.t_sink_c" (valueChange)="setBoundary('t_sink_c', $event)" />
+      <app-num label="R sink" unit="K/W" [value]="d.boundary.r_sink_k_w" (valueChange)="setBoundary('r_sink_k_w', $event)" />
+    }
+  </div>
+</div>
+
+@if (!compact()) {
+  <div class="block">
+    <details class="more">
+      <summary>Ceramics, electrodes and calibration factors</summary>
+      <div class="fields">
+        <app-num label="Ceramic t" unit="mm" [value]="d.passive.ceramic_thickness_mm" (valueChange)="setPassive('ceramic_thickness_mm', $event)" />
+        <app-num label="Ceramic k" unit="W/(m·K)" [value]="d.passive.ceramic_k" (valueChange)="setPassive('ceramic_k', $event)" />
+        <app-num label="Cu thickness" unit="mm" [value]="d.passive.cu_thickness_mm" (valueChange)="setPassive('cu_thickness_mm', $event)" />
+        <app-num label="Leg gap" unit="mm" [value]="d.passive.gap_mm" (valueChange)="setPassive('gap_mm', $event)" />
+        <app-num label="Terminal length" unit="mm" [value]="d.passive.terminal_length_mm"
+                 (valueChange)="setPassive('terminal_length_mm', $event)" />
+        <app-num label="Hot-side factor" step="0.01" [value]="d.passive.hot_side_factor" (valueChange)="setPassive('hot_side_factor', $event)" />
+        <app-num label="Cold-side factor" step="0.01" [value]="d.passive.cold_side_factor" (valueChange)="setPassive('cold_side_factor', $event)" />
+        <app-num label="ΔR series" unit="mΩ" step="0.01" [value]="d.passive.r_el_extra_mohm" (valueChange)="setPassive('r_el_extra_mohm', $event)" />
+        <app-num label="Frustum c3d" step="0.05" [value]="d.c3d" (valueChange)="setTop('c3d', $event)" />
+        <app-num label="Seebeck factor" step="0.005" [value]="d.alpha_factor" (valueChange)="setTop('alpha_factor', $event)" />
+      </div>
+    </details>
+    <details class="more">
+      <summary>Side losses and numerics</summary>
+      <div class="fields">
+        <app-num label="Side-wall h" unit="W/(m²·K)" hint="≈ 8.5·ε radiation (thesis eq. 3.24)" [value]="d.side_loss_h"
+                 (valueChange)="setTop('side_loss_h', $event)" />
+        <app-num label="Ambient" unit="°C" [value]="d.t_ambient_c" (valueChange)="setTop('t_ambient_c', $event)" />
+        <app-num label="Elements per leg" step="1" [value]="d.n_elements" (valueChange)="setTop('n_elements', $event)" />
+      </div>
+    </details>
+  </div>
+}

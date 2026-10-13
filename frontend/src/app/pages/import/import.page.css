@@ -1,0 +1,135 @@
+.drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 116px;
+  padding: 16px;
+  border: 1.5px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  text-align: center;
+  cursor: pointer;
+}
+
+.drop.over {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+}
+
+.drop input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.files {
+  margin-top: 10px;
+}
+
+.examples {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.examples li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.notes {
+  margin: 0 0 12px;
+  padding-left: 18px;
+  color: var(--ink-2);
+  font-size: 12.5px;
+}
+
+.mapping {
+  max-height: 520px;
+  overflow: auto;
+}
+
+.mapping select {
+  max-width: 220px;
+}
+
+.unit-input {
+  width: 110px;
+}
+
+.colname {
+  font-weight: 500;
+}
+
+.values {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
+tr.dim td {
+  color: var(--muted);
+}
+
+.conf {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+
+.conf.hi {
+  color: var(--good-ink);
+  background: color-mix(in srgb, var(--good) 12%, transparent);
+}
+
+.conf.mid {
+  color: var(--warning-ink);
+  background: color-mix(in srgb, var(--warning) 16%, transparent);
+}
+
+.conf.lo {
+  color: var(--critical-ink);
+  background: color-mix(in srgb, var(--critical) 10%, transparent);
+}
+
+.options {
+  margin-top: 12px;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.options .field {
+  min-width: 220px;
+}
+
+.cases-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+}
+
+.case-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+td.wrap {
+  white-space: normal;
+  min-width: 220px;
+}

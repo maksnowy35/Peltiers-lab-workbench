@@ -1,0 +1,211 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <h1>Analysis</h1>
+      <p>
+        Load curves, efficiency and heat balance of the selected cases. Markers are the imported data, thin lines the
+        1D model of the active design adapted to each case (geometry, boundary condition, contacts). Hollow rings mark
+        the fitted maximum-power point.
+      </p>
+    </div>
+    <div class="row">
+      <label class="check"><input type="checkbox" [checked]="overlay()" (change)="toggleOverlay($event)" /> Overlay 1D model</label>
+    </div>
+  </div>
+
+  <div class="card filters">
+    <div class="row">
+      <strong class="small">Cases</strong>
+      <button type="button" class="btn ghost small" (click)="selectAll()">all</button>
+      <button type="button" class="btn ghost small" (click)="selectNone()">none</button>
+      <span class="spacer"></span>
+      <label class="row small">
+        Reference for Δ
+        <select (change)="setReference($event)">
+          <option value="" [selected]="!referenceId()">first selected</option>
+          @for (c of selected(); track c.id) {
+            <option [value]="c.id" [selected]="referenceId() === c.id">{{ c.name }}</option>
+          }
+        </select>
+      </label>
+    </div>
+    <div class="case-list">
+      @for (c of ws.cases(); track c.id; let i = $index) {
+        <label class="case-pill" [class.on]="ws.selectedCaseIds().includes(c.id)">
+          <input type="checkbox" [checked]="ws.selectedCaseIds().includes(c.id)" (change)="toggle(c.id)" />
+          <span class="swatch" [attr.data-slot]="i % 8"></span>
+          {{ c.name }}
+          <span class="muted small">{{ c.n_points }} pts</span>
+        </label>
+      } @empty {
+        <p class="muted">No cases yet – <a routerLink="/import">import data</a> first.</p>
+      }
+    </div>
+    <p class="small muted legend-note">Colors follow this list in every chart below. Markers: data · lines: 1D model · rings: fitted P<sub>max</sub>.</p>
+    @if (tooMany()) {
+      <p class="small muted">Only the first 8 selected cases are shown (8 distinguishable colors).</p>
+    }
+  </div>
+
+  @if (error()) {
+    <div class="notice error" role="alert">{{ error() }}</div>
+  }
+
+  @if (result(); as res) {
+    <div class="grid cols-3 charts" [class.busy]="busy()">
+      <div class="card"><app-plot [legend]="false" title="Terminal voltage" xTitle="current I [A]" yTitle="U [mV]" [yScale]="1000" [traces]="uTraces()" /></div>
+      <div class="card"><app-plot [legend]="false" title="Electrical power" xTitle="current I [A]" yTitle="P [mW]" [yScale]="1000" [traces]="pTraces()" /></div>
+      <div class="card"><app-plot [legend]="false" title="Efficiency P / Q_h" xTitle="current I [A]" yTitle="η [%]" [yScale]="100" [traces]="etaTraces()"
+                                  emptyText="Needs Q_h (column or imposed value)" /></div>
+      <div class="card"><app-plot [legend]="false" title="Hot-face temperature" xTitle="current I [A]" yTitle="T [°C]" [traces]="thTraces()"
+                                  emptyText="No hot-face temperature in these cases" /></div>
+      <div class="card"><app-plot [legend]="false" title="ΔT across the legs" xTitle="current I [A]" yTitle="ΔT_TE [K]" [traces]="dtTraces()"
+                                  emptyText="Needs leg-end temperatures" /></div>
+      <div class="card"><app-plot [legend]="false" title="Heat rejected at the cold side" xTitle="current I [A]" yTitle="Q_c [W]" [traces]="qcTraces()"
+                                  emptyText="No cold-side reaction in these cases" /></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>Key figures</h2>
+          <p>K and α<sub>eff</sub> use the open-circuit point (thesis definition K = Q_h / ΔT_TE at I = 0).</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Case</th>
+              <th>U<sub>oc</sub> [mV]</th>
+              <th>ΔT<sub>TE</sub> [K]</th>
+              <th>K [mW/K]</th>
+              <th>α<sub>eff</sub> [µV/K]</th>
+              <th>P<sub>max</sub> [mW]</th>
+              <th>I<sub>opt</sub> [A]</th>
+              <th class="left">P<sub>max</sub> method</th>
+              <th>η at P<sub>max</sub></th>
+              <th>V<sub>TE</sub> [mm³]</th>
+              <th>V/P [mm³/mW]</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (a of res.analyses; track a.case_id) {
+              <tr>
+                <td class="left"><span class="swatch" [attr.data-slot]="slotOf(a.case_id)"></span>{{ a.name }}</td>
+                <td>{{ a.metrics.u_oc_v | n: 5 : 1000 }}</td>
+                <td>{{ a.metrics.dt_te_oc_k | n: 5 }}</td>
+                <td>{{ a.metrics.k_pair_w_k | n: 4 : 1000 }}</td>
+                <td>{{ a.metrics.alpha_eff_v_k | n: 4 : 1000000 }}</td>
+                <td>{{ a.metrics.p_max_w | n: 4 : 1000 }}</td>
+                <td>{{ a.metrics.i_opt_a | n: 3 }}</td>
+                <td class="left small">{{ a.metrics.p_max_method ?? '–' }}</td>
+                <td>{{ a.metrics.eta_at_p_max | pct: 2 }}</td>
+                <td>{{ a.metrics.te_volume_mm3 | n: 4 }}</td>
+                <td>{{ a.metrics.volume_per_power_mm3_mw | n: 3 }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>Variant comparison</h2>
+          <p>Relative change against the reference case – the thesis Table 5.3 view (K, material volume, P<sub>max</sub>, specific power).</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Case</th>
+              <th>θ [°]</th>
+              <th>Δ K</th>
+              <th>Δ U<sub>oc</sub></th>
+              <th>Δ V<sub>TE</sub></th>
+              <th>Δ P<sub>max</sub></th>
+              <th>Δ P/V</th>
+              <th>Δ η</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of res.comparison.rows; track r.case_id) {
+              <tr [class.highlight]="r.case_id === res.comparison.reference">
+                <td class="left">{{ r.name }}</td>
+                <td>{{ r.theta_deg | n: 3 }}</td>
+                <td>{{ r.d_k_pair_w_k | pct: 1 : true }}</td>
+                <td>{{ r.d_u_oc_v | pct: 1 : true }}</td>
+                <td>{{ r.d_te_volume_mm3 | pct: 1 : true }}</td>
+                <td>{{ r.d_p_max_w | pct: 1 : true }}</td>
+                <td>{{ r.d_power_per_volume_mw_mm3 | pct: 1 : true }}</td>
+                <td>{{ r.d_eta_at_p_max | pct: 1 : true }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>Consistency checks</h2>
+          <p>{{ warnCount() }} item(s) to look at. Expand a case for details.</p>
+        </div>
+      </div>
+      <div class="stack">
+        @for (a of res.analyses; track a.case_id) {
+          <details class="case-checks" [open]="countWarnings(a) > 0">
+            <summary>
+              <span class="swatch" [attr.data-slot]="slotOf(a.case_id)"></span>
+              <strong>{{ a.name }}</strong>
+              @if (countWarnings(a); as n) {
+                <span class="badge warn"><span class="ico" aria-hidden="true">!</span>{{ n }} to check</span>
+              } @else {
+                <span class="badge ok"><span class="ico" aria-hidden="true">✓</span>all good</span>
+              }
+              @for (e of modelErrors(a.case_id); track e.key) {
+                <span class="chip">model vs data {{ e.key }}: {{ e.rms | pct: 2 }}</span>
+              }
+            </summary>
+            <app-checks [checks]="a.checks" />
+          </details>
+        }
+      </div>
+    </div>
+  } @else if (busy()) {
+    <p class="muted">Analyzing…</p>
+  }
+
+  <div class="card gci">
+    <div class="card-head">
+      <div>
+        <h2>Mesh convergence (GCI)</h2>
+        <p>Roache's grid convergence index. Pre-filled with ΔT<sub>TE</sub> on meshes C1/C2 from thesis Section 3.5.3.</p>
+      </div>
+    </div>
+    <div class="fields">
+      <app-num label="Coarse mesh value" [value]="gciCoarse()" (valueChange)="gciCoarse.set($event)" />
+      <app-num label="Medium mesh value (optional)" [value]="gciMedium()" (valueChange)="setGciMedium($event)" />
+      <app-num label="Fine mesh value" [value]="gciFine()" (valueChange)="gciFine.set($event)" />
+      <app-num label="Refinement ratio r" step="0.01" [value]="gciR()" (valueChange)="gciR.set($event)" />
+      <app-num label="Formal order p" step="0.5" [value]="gciP()" (valueChange)="gciP.set($event)" />
+    </div>
+    <div class="row" style="margin-top: 10px">
+      <button type="button" class="btn primary small" (click)="computeGci()">Compute</button>
+      @if (gciMedium() !== null) {
+        <button type="button" class="btn ghost small" (click)="clearGciMedium()">two meshes only</button>
+      }
+      @if (gciResult(); as g) {
+        <span class="chip">GCI<sub>fine</sub> {{ g.gci_fine | pct: 3 }}</span>
+        <span class="chip">Richardson value {{ g.f_extrapolated | n: 6 }}</span>
+        <span class="chip">relative change {{ g.rel_change | pct: 3 }}</span>
+        <span class="chip">order used {{ g.p_used | n: 3 }}{{ g.p_observed ? ' (observed)' : '' }}</span>
+        <span class="chip">Fs {{ g.fs }}</span>
+      }
+    </div>
+  </div>
+</section>

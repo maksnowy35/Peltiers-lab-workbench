@@ -1,0 +1,57 @@
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+    <a class="brand" routerLink="/">
+      <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="#1c5cab" />
+        <rect x="7" y="9" width="7" height="14" rx="1.5" fill="#fcfcfb" />
+        <rect x="18" y="9" width="7" height="14" rx="1.5" fill="#86b6ef" />
+        <rect x="5" y="6" width="22" height="3" rx="1" fill="#eb6834" />
+        <rect x="5" y="23" width="22" height="3" rx="1" fill="#6da7ec" />
+      </svg>
+      <span class="brand-text">
+        <strong>teglab</strong>
+        <small>TEG pair workbench</small>
+      </span>
+    </a>
+    <nav aria-label="Main">
+      @for (item of nav; track item.path) {
+        <a [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.path === '/' }">
+          <span class="step" aria-hidden="true">{{ item.step }}</span>{{ item.label }}
+        </a>
+      }
+    </nav>
+    <div class="sidebar-foot">
+      <button type="button" class="btn ghost small" (click)="theme.cycle()">{{ themeLabel() }}</button>
+      <a href="/docs" target="_blank" rel="noopener">REST API docs</a>
+    </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      @if (ws.design()) {
+        <a class="design-chip" routerLink="/model" title="Active design – edit on the Model page">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="label">{{ ws.designLabel() }}</span>
+        </a>
+        @if (ws.calibrationNote()) {
+          <span class="muted small note">{{ ws.calibrationNote() }}</span>
+        }
+      } @else if (!ws.ready()) {
+        <span class="muted small">Connecting to the backend…</span>
+      }
+    </header>
+    @if (ws.error()) {
+      <div class="notice error backend-error" role="alert">
+        <div>
+          <strong>Backend not reachable.</strong>
+          <p>{{ ws.error() }}</p>
+          <p class="small">Start it with <code>python -m teglab</code> (or <code>docker compose up</code>) and retry.</p>
+        </div>
+        <button type="button" class="btn small" (click)="retry()">Retry</button>
+      </div>
+    }
+    <router-outlet />
+  </main>
+</div>

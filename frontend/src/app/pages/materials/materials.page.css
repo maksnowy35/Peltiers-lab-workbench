@@ -1,0 +1,11 @@
+.pair {
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.upload input[type="file"] {
+  max-width: 100%;
+  border: 0;
+  padding: 0;
+}

@@ -1,0 +1,269 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <h1>Data import</h1>
+      <p>
+        Bring ANSYS results in without retyping: export the <em>Table of Design Points</em> from the Workbench
+        Parameter Set (CSV), an <em>Outline of All Parameters</em>, Mechanical <em>Tabular Data</em>, or any CSV/XLSX
+        from the lab. Units are read from the header, the <code>Units</code> row or brackets.
+      </p>
+    </div>
+  </div>
+
+  <div class="grid cols-2">
+    <div class="card">
+      <div class="card-head"><h2>1 · Source</h2></div>
+      <label class="drop" [class.over]="dragging()" (dragover)="onDragOver($event)" (dragleave)="dragging.set(false)"
+             (drop)="onDrop($event)">
+        <input type="file" multiple accept=".csv,.txt,.tsv,.xlsx,.xlsm" (change)="onFiles($event)" />
+        <strong>Drop files here or click to choose</strong>
+        <span class="muted small">.csv .txt .tsv .xlsx · several files are merged row-wise (e.g. one outline per design point)</span>
+      </label>
+      @if (files().length) {
+        <div class="row files">
+          @for (f of files(); track f.name) {
+            <span class="chip">{{ f.name }} · {{ f.size / 1024 | n: 3 }} kB</span>
+          }
+          <button type="button" class="btn ghost small" (click)="clearFiles()">clear</button>
+        </div>
+      }
+      <label class="field" style="margin-top: 12px">
+        <span class="field-label">…or paste a table (e.g. copied from Mechanical's Tabular Data or Excel)</span>
+        <textarea rows="5" [value]="pasteText()" (input)="onPaste($event)"
+                  placeholder="Time [s]&#9;Maximum [°C]&#10;0.2&#9;97.6"></textarea>
+      </label>
+      <div class="row end" style="margin-top: 10px">
+        <button type="button" class="btn primary" [disabled]="busy() || (!files().length && !pasteText().trim())" (click)="parse()">
+          Read table
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>Examples</h2>
+          <p>Files named <code>thesis_*</code> contain only numbers printed in the thesis; <code>synthetic_*</code> are model-generated demos.</p>
+        </div>
+      </div>
+      <ul class="examples">
+        @for (e of examples(); track e.name) {
+          <li>
+            <div>
+              <strong class="mono">{{ e.name }}</strong>
+              <p class="muted small">{{ e.description }}</p>
+            </div>
+            <button type="button" class="btn small" [disabled]="busy()" (click)="loadExample(e.name)">Load</button>
+          </li>
+        }
+      </ul>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="notice error" role="alert">{{ error() }}</div>
+  }
+
+  @if (table(); as t) {
+    <div class="card" [class.busy]="busy()">
+      <div class="card-head">
+        <div>
+          <h2>2 · Column mapping</h2>
+          <p>{{ t.format }} · {{ t.n_rows }} rows · {{ t.columns.length }} columns · {{ t.sources.join(', ') }}</p>
+        </div>
+      </div>
+      @if (t.notes.length) {
+        <ul class="notes">
+          @for (n of t.notes; track $index) {
+            <li>{{ n }}</li>
+          }
+        </ul>
+      }
+      <div class="table-wrap mapping">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Column</th>
+              <th class="left">Unit</th>
+              <th class="left">Quantity</th>
+              <th class="left">Case</th>
+              <th class="left">Values</th>
+              <th>Match</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (col of t.columns; track col.key) {
+              <tr [class.dim]="col.role === 'ignore'">
+                <td class="left">
+                  <span class="colname">{{ col.name }}</span>
+                  @if (col.pid) {
+                    <span class="muted small mono"> {{ col.pid }}</span>
+                  }
+                </td>
+                <td class="left">
+                  <input class="unit-input" type="text" [value]="col.unit ?? ''" [disabled]="!col.numeric" (change)="setUnit(col, $event)" />
+                </td>
+                <td class="left">
+                  <select [value]="col.role" (change)="setRole(col, $event)">
+                    @for (r of roles(); track r.key) {
+                      @if (col.numeric || r.key === 'label' || r.key === 'ignore') {
+                        <option [value]="r.key" [selected]="r.key === col.role">{{ r.label }}</option>
+                      }
+                    }
+                  </select>
+                </td>
+                <td class="left">
+                  <select [value]="col.case" [disabled]="col.role === 'ignore' || col.role === 'label'" (change)="setCaseIndex(col, $event)">
+                    <option [value]="0" [selected]="col.case === 0">shared</option>
+                    @for (i of caseOptions(); track i) {
+                      <option [value]="i" [selected]="col.case === i">case {{ i }}</option>
+                    }
+                  </select>
+                </td>
+                <td class="left values mono">{{ sample(col) }}</td>
+                <td>
+                  <span [class]="'conf ' + confidenceClass(col.confidence)">{{ col.confidence * 100 | n: 2 }}%</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="row options">
+        <label class="field">
+          <span class="field-label">Split rows into cases by column</span>
+          <select (change)="setSplit($event)">
+            <option value="" [selected]="!splitBy()">no split</option>
+            @for (col of t.columns; track col.key) {
+              <option [value]="col.key" [selected]="splitBy() === col.key">{{ col.name }}</option>
+            }
+          </select>
+        </label>
+        <app-num label="Time → current factor" unit="A per s" hint="for load-step exports without a current column"
+                 [value]="timeToCurrent()" (valueChange)="timeToCurrent.set($event)" />
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>3 · Cases</h2>
+          <p>Boundary condition and geometry of every case – used by the analysis checks and the model calibration.</p>
+        </div>
+        <button type="button" class="btn small" (click)="addCase()">+ case</button>
+      </div>
+      <div class="cases-grid">
+        @for (c of caseDefs(); track c.index) {
+          <div class="case-card">
+            <div class="row">
+              <span class="chip">case {{ c.index }}</span>
+              <span class="spacer"></span>
+              <button type="button" class="btn ghost small" [disabled]="caseDefs().length < 2" (click)="removeCase(c.index)">remove</button>
+            </div>
+            <label class="field">
+              <span class="field-label">Name</span>
+              <input type="text" [value]="c.name" (change)="setCaseName(c.index, $event)" />
+            </label>
+            <div class="fields">
+              <label class="field">
+                <span class="field-label">Boundary condition</span>
+                <select (change)="setCaseBc(c.index, $event)">
+                  <option value="QT" [selected]="c.bc === 'QT'">QT – heat flow in</option>
+                  <option value="TT" [selected]="c.bc === 'TT'">TT – fixed temperatures</option>
+                  <option value="other" [selected]="c.bc === 'other'">other / lab</option>
+                </select>
+              </label>
+              @if (c.bc === 'QT') {
+                <app-num label="Q_h" unit="W" [value]="c.q_hot_w" (valueChange)="patchCase(c.index, { q_hot_w: $event })" />
+              }
+              @if (c.bc === 'TT') {
+                <app-num label="T hot" unit="°C" [value]="c.t_hot_c" (valueChange)="patchCase(c.index, { t_hot_c: $event })" />
+              }
+              <app-num label="T cold" unit="°C" [value]="c.t_cold_c" (valueChange)="patchCase(c.index, { t_cold_c: $event })" />
+              <label class="field">
+                <span class="field-label">Geometry</span>
+                <select (change)="setVariant(c.index, $event)">
+                  <option value="" [selected]="!c.variant">table / design</option>
+                  @for (v of variantNames(); track v) {
+                    <option [value]="v" [selected]="c.variant === v">{{ v }} (thesis)</option>
+                  }
+                  <option value="custom" [selected]="c.variant === 'custom'">custom</option>
+                </select>
+              </label>
+              @if (c.variant === 'custom') {
+                <app-num label="a_h" unit="mm" [value]="c.a_hot_mm" (valueChange)="patchCase(c.index, { a_hot_mm: $event })" />
+                <app-num label="a_c" unit="mm" [value]="c.a_cold_mm" (valueChange)="patchCase(c.index, { a_cold_mm: $event })" />
+                <app-num label="H" unit="mm" [value]="c.height_mm" (valueChange)="patchCase(c.index, { height_mm: $event })" />
+              }
+              <label class="field">
+                <span class="field-label">Contacts in this system</span>
+                <select (change)="setContacts(c.index, $event)">
+                  <option value="default" [selected]="c.contacts === 'default'">as in design</option>
+                  <option value="finite" [selected]="c.contacts === 'finite'">finite TCC/ECC</option>
+                  <option value="ideal" [selected]="c.contacts === 'ideal'">ideal (bonded)</option>
+                </select>
+              </label>
+            </div>
+            @for (p of previews(); track p.index) {
+              @if (p.index === c.index) {
+                <p class="muted small">{{ p.points }} points · {{ p.roles.length ? p.roles.join(', ') : 'no mapped quantities' }}</p>
+              }
+            }
+          </div>
+        }
+      </div>
+      <div class="row end" style="margin-top: 12px">
+        <button type="button" class="btn primary" [disabled]="busy()" (click)="commit()">Create cases</button>
+      </div>
+      @if (created(); as res) {
+        <div class="notice ok" style="margin-top: 12px">
+          <div>
+            <strong>{{ res.cases.length }} case(s) created.</strong>
+            <a routerLink="/analysis"> Open them in Analysis →</a>
+            @for (n of res.notes; track $index) {
+              <p class="small">{{ n }}</p>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2>Imported cases</h2>
+        <p>Stored in the local SQLite database of the backend.</p>
+      </div>
+      <button type="button" class="btn small" (click)="reseed()">Restore demo cases</button>
+    </div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th class="left">Conditions</th>
+            <th>Points</th>
+            <th class="left">Quantities</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of ws.cases(); track c.id) {
+            <tr>
+              <td class="left">{{ c.name }}</td>
+              <td class="left">{{ metaSummary(c) }}</td>
+              <td>{{ c.n_points }}</td>
+              <td class="left small wrap">{{ c.roles.join(', ') }}</td>
+              <td><button type="button" class="btn ghost small" (click)="deleteCase(c)">delete</button></td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="left muted">No cases yet.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

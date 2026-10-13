@@ -1,0 +1,256 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <h1>Geometry optimizer</h1>
+      <p>
+        Sweeps the leg shape with the (calibrated) 1D model and finds the maximum-power operating point of every
+        design. The comparison constraint is explicit, as it must be: a fixed cold base (thesis A-series), a fixed hot
+        base, or a constant volume of thermoelectric material. Limits on the smallest leg side, the joint temperature and
+        the material temperature mark designs that cannot be built or would not survive.
+      </p>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="card controls">
+      <p class="section-title">Comparison constraint</p>
+      <div class="seg" role="group" aria-label="Comparison constraint">
+        <button type="button" [class.on]="mode() === 'fixed_cold_base'" (click)="setMode('fixed_cold_base')">Cold base fixed</button>
+        <button type="button" [class.on]="mode() === 'fixed_hot_base'" (click)="setMode('fixed_hot_base')">Hot base fixed</button>
+        <button type="button" [class.on]="mode() === 'constant_volume'" (click)="setMode('constant_volume')">Volume fixed</button>
+      </div>
+
+      <p class="section-title" style="margin-top: 14px">{{ isVolume() ? 'Side ratio a_h / a_c' : 'Taper angle θ (narrow end hot > 0)' }}</p>
+      <div class="fields three">
+        @if (isVolume()) {
+          <app-num label="from" step="0.05" [value]="ratioFrom()" (valueChange)="ratioFrom.set($event)" />
+          <app-num label="to" step="0.05" [value]="ratioTo()" (valueChange)="ratioTo.set($event)" />
+          <app-num label="step" step="0.01" [value]="ratioStep()" (valueChange)="ratioStep.set($event)" />
+        } @else {
+          <app-num label="from" unit="°" [value]="angleFrom()" (valueChange)="angleFrom.set($event)" />
+          <app-num label="to" unit="°" [value]="angleTo()" (valueChange)="angleTo.set($event)" />
+          <app-num label="step" unit="°" [value]="angleStep()" (valueChange)="angleStep.set($event)" />
+        }
+      </div>
+      <p class="muted small">{{ values().length }} shapes per height</p>
+
+      <label class="field" style="margin-top: 10px">
+        <span class="field-label">Leg heights for the sweep [mm]</span>
+        <input type="text" [value]="heightsText()" (change)="setHeights($event)" />
+      </label>
+
+      <label class="field" style="margin-top: 10px">
+        <span class="field-label">Objective</span>
+        <select (change)="setObjective($event)">
+          @for (o of objectives; track o.key) {
+            <option [value]="o.key" [selected]="o.key === objective()">{{ o.label }}</option>
+          }
+        </select>
+      </label>
+
+      <p class="section-title" style="margin-top: 14px">Thermal boundary condition for the study</p>
+      <select aria-label="Boundary condition" (change)="setBc($event)">
+        <option value="design" [selected]="bc() === 'design'">as in the active design</option>
+        <option value="QT" [selected]="bc() === 'QT'">fixed heat input (QT)</option>
+        <option value="TT" [selected]="bc() === 'TT'">fixed temperatures (TT)</option>
+        <option value="HX" [selected]="bc() === 'HX'">heat exchangers (source + sink)</option>
+      </select>
+      <div class="fields" style="margin-top: 8px">
+        @switch (bc()) {
+          @case ('QT') {
+            <app-num label="Q_h per pair" unit="W" [value]="qHot()" (valueChange)="qHot.set($event)" />
+            <app-num label="T cold" unit="°C" [value]="tCold()" (valueChange)="tCold.set($event)" />
+          }
+          @case ('TT') {
+            <app-num label="T hot" unit="°C" [value]="tHot()" (valueChange)="tHot.set($event)" />
+            <app-num label="T cold" unit="°C" [value]="tCold()" (valueChange)="tCold.set($event)" />
+          }
+          @case ('HX') {
+            <app-num label="Source T" unit="°C" [value]="tSource()" (valueChange)="tSource.set($event)" />
+            <app-num label="R source" unit="K/W" [value]="rSource()" (valueChange)="rSource.set($event)" />
+            <app-num label="Sink T" unit="°C" [value]="tSink()" (valueChange)="tSink.set($event)" />
+            <app-num label="R sink" unit="K/W" [value]="rSink()" (valueChange)="rSink.set($event)" />
+          }
+          @default {
+            <p class="muted small span-all">{{ ws.designLabel() }} – <a routerLink="/model">edit</a></p>
+          }
+        }
+      </div>
+      @if (bc() === 'HX') {
+        <p class="muted small">A finite hot-side exchanger makes the optimum a matter of thermal impedance matching – there is a true interior optimum.</p>
+      }
+
+      <p class="section-title" style="margin-top: 14px">Limits</p>
+      <div class="fields">
+        <app-num label="Smallest leg side" unit="mm" step="0.05" hint="brittle narrow end" [value]="aMin()" (valueChange)="aMin.set($event)" />
+        <app-num label="Max joint T" unit="°C" hint="solder solidus − margin" [value]="jointMax()" [disabled]="!useJointLimit()"
+                 (valueChange)="jointMax.set($event)" />
+      </div>
+      <div class="stack" style="gap: 6px; margin-top: 8px">
+        <label class="check small"><input type="checkbox" [checked]="useJointLimit()" (change)="toggleJoint($event)" /> limit the joint temperature</label>
+        <label class="check small"><input type="checkbox" [checked]="useMaterialLimit()" (change)="toggleMaterial($event)" /> respect material temperature limits</label>
+      </div>
+
+      <div class="row" style="margin-top: 14px">
+        <button type="button" class="btn primary" [disabled]="busy() !== null" (click)="runSweep()">
+          {{ busy() === 'sweep' ? 'Sweeping…' : 'Run sweep' }}
+        </button>
+      </div>
+
+      <hr class="sep" />
+      <p class="section-title">2D map (shape × height)</p>
+      <div class="fields three">
+        <app-num label="H from" unit="mm" step="0.1" [value]="mapHFrom()" (valueChange)="mapHFrom.set($event)" />
+        <app-num label="H to" unit="mm" step="0.1" [value]="mapHTo()" (valueChange)="mapHTo.set($event)" />
+        <app-num label="H step" unit="mm" step="0.05" [value]="mapHStep()" (valueChange)="mapHStep.set($event)" />
+      </div>
+      <div class="row" style="margin-top: 10px">
+        <button type="button" class="btn" [disabled]="busy() !== null" (click)="runMap()">
+          {{ busy() === 'map' ? 'Computing map…' : 'Compute map' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="stack">
+      @if (error()) {
+        <div class="notice error" role="alert">{{ error() }}</div>
+      }
+
+      @if (sweep(); as r) {
+        <div class="card" [class.busy]="busy() === 'sweep'">
+          <div class="card-head">
+            <div>
+              <h2>Optimum</h2>
+              <p>best feasible design for “{{ obj().label }}” against the active design as reference</p>
+            </div>
+            <div class="row">
+              @if (r.optimum; as o) {
+                <button type="button" class="btn small" (click)="useDesign(o)">Use as active design</button>
+              }
+              <button type="button" class="btn small" (click)="exportOpen.set(!exportOpen())">Export to ANSYS</button>
+            </div>
+          </div>
+          @if (r.optimum; as o) {
+            <div class="kpis">
+              <app-stat label="Taper θ" [value]="o.theta_deg | n: 3" unit="°" [hint]="'a_h ' + (o.a_hot_mm | n: 3) + ' / a_c ' + (o.a_cold_mm | n: 3) + ' mm'" />
+              <app-stat label="Height H" [value]="o.height_mm | n: 3" unit="mm" />
+              <app-stat label="P max" [value]="o.p_max_w | n: 4 : 1000" unit="mW" [hint]="'I_opt ' + (o.i_opt_a | n: 3) + ' A'" />
+              <app-stat label="Gain vs reference" [value]="gain() | pct: 1 : true" [hint]="obj().label" />
+              <app-stat label="η at P max" [value]="o.eta_at_p_max | pct: 2" />
+              <app-stat label="Joint T (max)" [value]="o.t_joint_max_c | n: 4" unit="°C" />
+              <app-stat label="TE volume (pair)" [value]="o.te_volume_mm3 | n: 4" unit="mm³" />
+              <app-stat label="Power per volume" [value]="o.power_per_volume_mw_mm3 | n: 3" unit="mW/mm³" />
+            </div>
+          } @else {
+            <div class="notice warn">No design satisfies all limits – relax the limits or change the range.</div>
+          }
+        </div>
+
+        @if (exportOpen()) {
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>Export design points to ANSYS Workbench</h2>
+                <p>Reference and optimum × currents. Map the teglab keys to the parameter IDs of your project.</p>
+              </div>
+            </div>
+            <div class="fields">
+              @for (k of ['a_hot_mm', 'a_cold_mm', 'height_mm', 'current_a']; track k) {
+                <label class="field">
+                  <span class="field-label mono">{{ k }}</span>
+                  <input type="text" [value]="paramMap()[k] ?? ''" (change)="setParam(k, $event)" />
+                </label>
+              }
+            </div>
+            <label class="field" style="margin-top: 10px">
+              <span class="field-label">Currents [A] – dense around I_opt</span>
+              <input type="text" [value]="exportCurrents()" (change)="setCurrents($event)" />
+            </label>
+            <div class="row" style="margin-top: 10px">
+              <button type="button" class="btn primary small" (click)="buildExport()">Generate</button>
+              @if (exportResult(); as e) {
+                <span class="chip">{{ e.rows.length }} design points</span>
+                <button type="button" class="btn small" (click)="downloadCsv()">Download CSV</button>
+                <button type="button" class="btn small" (click)="downloadJournal()">Download journal (.wbjn)</button>
+              }
+            </div>
+            @if (exportResult(); as e) {
+              <div class="grid cols-2" style="margin-top: 12px">
+                <div>
+                  <p class="section-title">Design-point table</p>
+                  <pre>{{ e.csv }}</pre>
+                </div>
+                <div>
+                  <p class="section-title">Workbench journal (IronPython)</p>
+                  <pre>{{ e.journal }}</pre>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="grid cols-2" [class.busy]="busy() === 'sweep'">
+          <div class="card">
+            <app-plot [title]="obj().label" subtitle="filled: feasible · hollow: violates a limit · large ring: optimum"
+                      [xTitle]="xLabel()" [yTitle]="obj().label + ' [' + obj().unit + ']'" [yScale]="obj().scale"
+                      [traces]="objectiveTraces()" hoverMode="closest" [layoutPatch]="objectiveRange()" [height]="320" />
+          </div>
+          <div class="card">
+            <app-plot title="Hottest joint temperature" subtitle="hot-side Cu/solder, worst of open circuit and P_max"
+                      [xTitle]="xLabel()" yTitle="T [°C]" [traces]="jointTraces()" [shapes]="jointShapes()" [annotations]="jointAnnotations()"
+                      [layoutPatch]="jointRange()" [height]="320" />
+          </div>
+        </div>
+
+        <div class="grid cols-2">
+          <div class="card">
+            <app-plot title="Power vs material (Pareto)" subtitle="tellurium economy: more power for less TE volume"
+                      xTitle="TE volume per pair [mm³]" yTitle="P_max [mW]" [yScale]="1000" [traces]="paretoTraces()" hoverMode="closest" [height]="300" />
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>All designs</h2></div>
+            <div class="table-wrap all-rows">
+              <table class="data">
+                <thead>
+                  <tr>
+                    <th>{{ isVolume() ? 'a_h/a_c' : 'θ [°]' }}</th>
+                    <th>H</th>
+                    <th>a_h</th>
+                    <th>a_c</th>
+                    <th>{{ obj().unit }}</th>
+                    <th>T joint</th>
+                    <th class="left">limits</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (p of rows(); track $index) {
+                    <tr [class.highlight]="isOptimum(p)">
+                      <td>{{ p.x | n: 3 }}</td>
+                      <td>{{ p.height_mm | n: 3 }}</td>
+                      <td>{{ p.a_hot_mm | n: 3 }}</td>
+                      <td>{{ p.a_cold_mm | n: 3 }}</td>
+                      <td>{{ value(p) | n: 4 : obj().scale }}</td>
+                      <td>{{ p.t_joint_max_c | n: 4 }}</td>
+                      <td class="left small">{{ p.feasible ? 'ok' : p.violations.join('; ') }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      } @else {
+        <div class="card empty-state">
+          <p>Choose the constraint and range, then <strong>Run sweep</strong>. A sweep of ~25 shapes × 3 heights takes about a second.</p>
+        </div>
+      }
+
+      @if (heatmap(); as hm) {
+        <div class="card" [class.busy]="busy() === 'map'">
+          <app-plot [title]="obj().label + ' map'" subtitle="blank cells violate a limit · ring: best feasible design"
+                    [xTitle]="xLabel()" yTitle="H [mm]" [heatmap]="hm" [traces]="mapOptimum()" [height]="380" />
+        </div>
+      }
+    </div>
+  </div>
+</section>

@@ -1,0 +1,77 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <h1>Thermoelectric pair workbench</h1>
+      <p>
+        From ANSYS Thermal-Electric results to an optimized, buildable P–N pair: import design points, check them,
+        calibrate a fast 1D model, search geometry and materials, and plan the soldering and measurements in the lab.
+      </p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2>Active design</h2>
+        <p>{{ ws.designLabel() }}</p>
+      </div>
+      <a class="btn small" routerLink="/model">Edit design</a>
+    </div>
+    @if (error()) {
+      <div class="notice error">{{ error() }}</div>
+    }
+    @if (result(); as r) {
+      <div class="kpis">
+        <app-stat label="Open-circuit voltage" [value]="r.summary.u_oc_v | n: 4 : 1000" unit="mV" />
+        <app-stat label="Maximum power" [value]="r.summary.p_max_w | n: 4 : 1000" unit="mW"
+                  [hint]="'at I = ' + (r.summary.i_opt_a | n: 3) + ' A'" />
+        <app-stat label="Efficiency at P_max" [value]="r.summary.eta_at_p_max | pct: 2" [hint]="'exergy ' + (r.summary.exergy_eta_at_p_max | pct: 1)" />
+        <app-stat label="Internal resistance" [value]="r.summary.r_int_ohm | n: 4 : 1000" unit="mΩ" />
+        <app-stat label="Pair conductance K" [value]="r.summary.k_pair_w_k | n: 4 : 1000" unit="mW/K" />
+        <app-stat label="Hot face (open circuit)" [value]="r.summary.t_hot_ext_oc_c | n: 4" unit="°C" />
+        <app-stat label="Material per power" [value]="r.summary.volume_per_power_mm3_mw | n: 3" unit="mm³/mW" />
+      </div>
+    } @else if (!error()) {
+      <p class="muted">Computing…</p>
+    }
+  </div>
+
+  <div class="grid cols-3">
+    @for (s of steps; track s.path) {
+      <a class="card step-card" [routerLink]="s.path">
+        <span class="step-n">{{ s.n }}</span>
+        <h2>{{ s.title }}</h2>
+        <p>{{ s.text }}</p>
+      </a>
+    }
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2>Data health</h2>
+        <p>Warnings raised by the automatic checks on all imported cases</p>
+      </div>
+      <a class="btn small" routerLink="/analysis">Open analysis</a>
+    </div>
+    @if (health(); as items) {
+      @if (items.length) {
+        <ul class="health">
+          @for (h of items; track h.caseId + h.check.id) {
+            <li>
+              <span class="badge warn"><span class="ico" aria-hidden="true">!</span>Check</span>
+              <div>
+                <strong>{{ h.caseName }} – {{ h.check.title }}</strong>
+                <p>{{ h.check.detail }}</p>
+              </div>
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="notice ok">All checks passed.</div>
+      }
+    } @else {
+      <p class="muted">Checking imported cases…</p>
+    }
+  </div>
+</section>

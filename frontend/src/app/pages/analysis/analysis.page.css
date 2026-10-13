@@ -1,0 +1,48 @@
+.filters {
+  position: sticky;
+  top: 60px;
+  z-index: 4;
+}
+
+.case-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.case-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 12.5px;
+}
+
+.case-pill.on {
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+}
+
+.case-checks {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.case-checks summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+
+.case-checks[open] summary {
+  margin-bottom: 12px;
+}

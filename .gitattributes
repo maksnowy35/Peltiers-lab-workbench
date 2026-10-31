@@ -1,0 +1,12 @@
+# Keep LF everywhere (the repo is edited on Windows, built in Linux containers and CI).
+* text=auto eol=lf
+
+# must stay LF or bash fails with "$'\r': command not found"
+*.sh text eol=lf
+
+# binary files
+*.png binary
+*.jpg binary
+*.ico binary
+*.xlsx binary
+*.zip binary

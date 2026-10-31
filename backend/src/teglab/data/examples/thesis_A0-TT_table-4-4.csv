@@ -1,5 +1,5 @@
 #
-# teglab example - values printed in the thesis, Tables 4.2–4.4 (case A0-TT, 100 C / 20 C, mesh C1).
+# teglab example - values printed in the thesis, Tables 4.2-4.4 (case A0-TT, 100 C / 20 C, mesh C1).
 # U follows the thesis regression U = 30.02 mV - 17.26 mOhm * I (reproduces the P column of Table 4.4).
 # Leg-end temperatures at I = 0 from Table 4.3 (2.84 K hot / 2.09 K cold passive drop).
 # The parameters defined in the project are:

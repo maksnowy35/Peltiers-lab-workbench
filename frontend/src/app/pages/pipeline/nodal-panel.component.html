@@ -1,0 +1,297 @@
+<div class="grid cols-2">
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2>Mechanical nodal exports</h2>
+        <p>
+          The folder written by <code>tools/ansys/teglab_export_nodal.py</code> as a .zip, or single
+          <em>Export Text File</em> results with node locations. <code>manifest.json</code> and contour PNGs are optional.
+        </p>
+      </div>
+    </div>
+    <label class="drop" [class.over]="dragging()" (dragover)="onDragOver($event)" (dragleave)="dragging.set(false)"
+           (drop)="onDrop($event)">
+      <input type="file" multiple accept=".zip,.txt,.csv,.xls,.json,.png" (change)="onFiles($event)" />
+      <strong>Drop the export here or click to choose</strong>
+      <span class="muted small">.zip .txt .csv .xls .json .png · one analysis system per upload</span>
+    </label>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2>Synthetic demo</h2>
+        <p>
+          A physically consistent A0 cell at 0.8 A (not ANSYS output). Load both variants to see what a contact
+          definition that was not applied looks like in the nodal data.
+        </p>
+      </div>
+    </div>
+    <ul class="examples">
+      @for (e of nodalExamples(); track e.name) {
+        <li>
+          <div>
+            <strong>{{ e.title }}</strong>
+            <p class="muted small">{{ e.description }}</p>
+          </div>
+          <div class="row">
+            <a class="btn ghost small" [href]="api.exampleUrl(e.name)" [attr.download]="e.name">Download</a>
+            <button type="button" class="btn small" [disabled]="state.nodalBusy()" (click)="state.addExample(e)">Load</button>
+          </div>
+        </li>
+      }
+    </ul>
+  </div>
+</div>
+
+@if (state.nodalError()) {
+  <div class="notice error" role="alert">{{ state.nodalError() }}</div>
+}
+@if (state.nodalBusy() && !state.dataset()) {
+  <p class="muted">Reading nodal files…</p>
+}
+
+@if (state.dataset(); as ds) {
+  <div class="card" [class.busy]="state.nodalBusy()">
+    <div class="card-head">
+      <div>
+        <h2>{{ ds.title ?? 'Nodal dataset' }}</h2>
+        <p>
+          {{ ds.files.length }} files · {{ ds.bodies.length }} bodies · {{ totalNodes() }} nodes ·
+          @for (q of ds.quantities; track q) {
+            <span class="chip">{{ nodalLabel[q] }}</span>
+          }
+          @if (ds.synthetic) {
+            <span class="chip">synthetic</span>
+          }
+        </p>
+      </div>
+      <button type="button" class="btn ghost small" (click)="state.closeDataset()">Close dataset</button>
+    </div>
+    @if (datasetIssues().length) {
+      <ul class="issues">
+        @for (i of datasetIssues(); track $index) {
+          <li>
+            <span [class]="'badge ' + levelBadge(i.level).kind">
+              <span class="ico" aria-hidden="true">{{ levelBadge(i.level).icon }}</span>{{ levelBadge(i.level).text }}
+            </span>
+            <p class="small">{{ i.message }}@if (i.source) { <span class="muted"> · {{ i.source }}</span> }</p>
+          </li>
+        }
+      </ul>
+    }
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Body</th>
+            <th>Nodes</th>
+            <th class="left">Quantities</th>
+            <th>Extent along {{ state.stack()?.axis ?? 'y' }} [mm]</th>
+            <th>Mean T [°C]</th>
+            <th class="left">Layer</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (b of ds.bodies; track b.tag) {
+            <tr>
+              <td class="mono">{{ b.tag }}</td>
+              <td>{{ b.n_nodes }}</td>
+              <td class="left mono small" [title]="quantityNames(b)">{{ symbols(b) }}</td>
+              <td>{{ extent(b) }}</td>
+              <td>{{ b.t_mean_c | n: 4 }}</td>
+              <td class="left">
+                @if (state.stack(); as st) {
+                  <select (change)="assign(b.tag, $event)" [attr.aria-label]="'Layer of ' + b.tag">
+                    <option value="-1" [selected]="layerOf(b.tag) === -1">not in the stack</option>
+                    @for (l of st.layers; track $index; let k = $index) {
+                      <option [value]="k" [selected]="layerOf(b.tag) === k">{{ k + 1 }} · {{ l.name }}</option>
+                    }
+                  </select>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  @if (state.stack(); as st) {
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>Layer stack</h2>
+          <p>Hot face first. Proposed from the body extents; the layer with the largest temperature span holds the legs.</p>
+        </div>
+        <div class="row">
+          <button type="button" class="btn ghost small" (click)="reverse()">Reverse</button>
+          <button type="button" class="btn ghost small" (click)="addLayer()">Add layer</button>
+          <button type="button" class="btn ghost small" (click)="state.resetStack()">Reset</button>
+        </div>
+      </div>
+      <ol class="layers">
+        @for (layer of st.layers; track $index; let k = $index, first = $first, last = $last) {
+          <li [class.active]="layer.active">
+            <span class="layer-n">{{ k + 1 }}</span>
+            <input class="layer-name" [value]="layer.name" (change)="rename(k, $event)" [attr.aria-label]="'Name of layer ' + (k + 1)" />
+            <span class="layer-bodies">
+              @for (b of layer.bodies; track b) {
+                <span class="chip mono">{{ b }}</span>
+              } @empty {
+                <span class="muted small">no bodies - assign them in the table above</span>
+              }
+            </span>
+            <label class="check small">
+              <input type="radio" name="active-layer" [checked]="layer.active" (change)="setActive(k)" />
+              legs
+            </label>
+            <span class="layer-tools">
+              <button type="button" class="btn ghost small" (click)="move(k, -1)" [disabled]="first" [attr.aria-label]="'Move layer ' + (k + 1) + ' up'">↑</button>
+              <button type="button" class="btn ghost small" (click)="move(k, 1)" [disabled]="last" [attr.aria-label]="'Move layer ' + (k + 1) + ' down'">↓</button>
+              @if (!layer.bodies.length) {
+                <button type="button" class="btn ghost small" (click)="removeLayer(k)" [attr.aria-label]="'Remove layer ' + (k + 1)">×</button>
+              }
+            </span>
+          </li>
+        }
+      </ol>
+      <div class="settings">
+        <label class="field">
+          <span class="field-label">Stack axis</span>
+          <select (change)="setAxis($event)">
+            @for (a of axes; track a) {
+              <option [value]="a" [selected]="a === st.axis">{{ a }}</option>
+            }
+          </select>
+        </label>
+        <app-num label="Face tolerance" unit="µm" [value]="state.tolMm() * 1000" (valueChange)="setTolUm($event)" />
+        <app-num label="Expected TCC" unit="W/(m²·K)" [value]="state.expected().tcc_w_m2k" (valueChange)="setExpected('tcc_w_m2k', $event)" />
+        <app-num label="Expected ECC" unit="S/m²" [value]="state.expected().ecc_s_m2" (valueChange)="setExpected('ecc_s_m2', $event)" />
+        <button type="button" class="btn primary" [disabled]="state.nodalBusy()" (click)="state.evaluate()">Evaluate profile</button>
+      </div>
+    </div>
+  }
+
+  @if (state.layerProfile(); as prof) {
+    @if (stale()) {
+      <div class="notice warn" role="status">The stack was edited after this evaluation - evaluate again to update the results.</div>
+    }
+    <div class="card" [class.busy]="state.nodalBusy()">
+      <div class="card-head">
+        <div>
+          <h2>Temperature through the stack</h2>
+          <p>Area-weighted face averages of every layer; vertical steps are the jumps across interfaces.</p>
+        </div>
+      </div>
+      @if (prof.split; as sp) {
+        <div class="kpis">
+          <app-stat label="ΔT across the legs" [value]="sp.dt_te_k | n: 4" unit="K" hint="ΔT_TE" />
+          <app-stat label="Passive, hot side" [value]="sp.dt_hot_passive_k | n: 3" unit="K" hint="ceramic, Cu, contact" />
+          <app-stat label="Passive, cold side" [value]="sp.dt_cold_passive_k | n: 3" unit="K" hint="contact, Cu, ceramic" />
+          <app-stat label="Passive share" [value]="sp.passive_share | pct: 2" [hint]="'of ' + (sp.dt_total_k | n: 4) + ' K in total'" />
+          <app-stat label="All contact jumps" [value]="sp.dt_contacts_k | n: 3" unit="K" />
+        </div>
+      }
+      <app-plot [traces]="profileTraces()" [shapes]="profileShapes()" [annotations]="profileAnnotations()"
+                xTitle="distance from the hot face [mm]" yTitle="T [°C]" hoverMode="closest" [height]="320"
+                subtitle="Shaded: the thermoelectric legs" />
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Layer / interface</th>
+              <th>T hot face [°C]</th>
+              <th>T cold face [°C]</th>
+              <th>ΔT [K]</th>
+              <th>Share of ΔT</th>
+              <th>Face area [mm²]</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of layerRows(); track $index) {
+              <tr [class.highlight]="r.active">
+                <td>{{ r.kind === 'interface' ? '↳ ' : '' }}{{ r.name }}</td>
+                <td>{{ r.t_hot_c | n: 5 }}</td>
+                <td>{{ r.t_cold_c | n: 5 }}</td>
+                <td>{{ r.dt_k | n: 4 }}</td>
+                <td>{{ share(r) | pct: 2 }}</td>
+                <td>{{ r.area_mm2 | n: 4 }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>Contact checks</h2>
+          <p>
+            TCC_eff = q / ΔT with the heat flux on the metal side, ECC_eff = J / ΔV with the current density on the leg
+            side, both averaged over the leg-end face. Specified: {{ prof.expected.tcc_w_m2k | n: 3 }} W/(m²·K) and
+            {{ prof.expected.ecc_s_m2 | n: 3 }} S/m².
+          </p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Interface</th>
+              <th>ΔT [K]</th>
+              <th>q [kW/m²]</th>
+              <th>TCC_eff [W/(m²·K)]</th>
+              <th class="left">Thermal</th>
+              <th>ΔV [mV]</th>
+              <th>J [A/mm²]</th>
+              <th>ECC_eff [S/m²]</th>
+              <th class="left">Electrical</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of prof.contacts; track c.interface) {
+              <tr>
+                <td>
+                  <span class="mono">{{ c.interface }}</span>
+                  <span class="muted small"> {{ c.at_active_layer ? 'leg contact' : 'passive' }}</span>
+                </td>
+                <td>{{ c.dt_k | n: 4 }}</td>
+                <td>{{ c.heat_flux_w_m2 | n: 4 : 0.001 }}</td>
+                <td>{{ c.tcc_eff_w_m2k === null ? (c.thermal_verdict === 'bonded' ? '∞' : '-') : (c.tcc_eff_w_m2k | n: 3) }}</td>
+                <td class="left">
+                  <span [class]="'badge ' + verdictBadge(c.thermal_verdict, c.at_active_layer).kind">
+                    <span class="ico" aria-hidden="true">{{ verdictBadge(c.thermal_verdict, c.at_active_layer).icon }}</span>
+                    {{ verdictBadge(c.thermal_verdict, c.at_active_layer).text }}
+                  </span>
+                </td>
+                <td>{{ c.dv_v === null ? '-' : (c.dv_v | n: 4 : 1000) }}</td>
+                <td>{{ c.current_density_a_m2 | n: 4 : 0.000001 }}</td>
+                <td>{{ c.ecc_eff_s_m2 === null ? (c.electrical_verdict === 'bonded' ? '∞' : '-') : (c.ecc_eff_s_m2 | n: 3) }}</td>
+                <td class="left">
+                  <span [class]="'badge ' + verdictBadge(c.electrical_verdict, c.at_active_layer).kind">
+                    <span class="ico" aria-hidden="true">{{ verdictBadge(c.electrical_verdict, c.at_active_layer).icon }}</span>
+                    {{ verdictBadge(c.electrical_verdict, c.at_active_layer).text }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (prof.issues.length) {
+        <ul class="issues">
+          @for (i of prof.issues; track $index) {
+            <li>
+              <span [class]="'badge ' + levelBadge(i.level).kind">
+                <span class="ico" aria-hidden="true">{{ levelBadge(i.level).icon }}</span>{{ levelBadge(i.level).text }}
+              </span>
+              <p class="small">{{ i.message }}</p>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  }
+}

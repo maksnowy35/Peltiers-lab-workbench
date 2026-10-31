@@ -38,7 +38,7 @@
           <span class="muted small">{{ c.n_points }} pts</span>
         </label>
       } @empty {
-        <p class="muted">No cases yet – <a routerLink="/import">import data</a> first.</p>
+        <p class="muted">No cases yet - <a routerLink="/import">import data</a> first.</p>
       }
     </div>
     <p class="small muted legend-note">Colors follow this list in every chart below. Markers: data · lines: 1D model · rings: fitted P<sub>max</sub>.</p>
@@ -99,7 +99,7 @@
                 <td>{{ a.metrics.alpha_eff_v_k | n: 4 : 1000000 }}</td>
                 <td>{{ a.metrics.p_max_w | n: 4 : 1000 }}</td>
                 <td>{{ a.metrics.i_opt_a | n: 3 }}</td>
-                <td class="left small">{{ a.metrics.p_max_method ?? '–' }}</td>
+                <td class="left small">{{ a.metrics.p_max_method ?? '-' }}</td>
                 <td>{{ a.metrics.eta_at_p_max | pct: 2 }}</td>
                 <td>{{ a.metrics.te_volume_mm3 | n: 4 }}</td>
                 <td>{{ a.metrics.volume_per_power_mm3_mw | n: 3 }}</td>
@@ -114,7 +114,7 @@
       <div class="card-head">
         <div>
           <h2>Variant comparison</h2>
-          <p>Relative change against the reference case – the thesis Table 5.3 view (K, material volume, P<sub>max</sub>, specific power).</p>
+          <p>Relative change against the reference case - the thesis Table 5.3 view (K, material volume, P<sub>max</sub>, specific power).</p>
         </div>
       </div>
       <div class="table-wrap">

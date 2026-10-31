@@ -1,0 +1,8 @@
+# Ruff for Python outside backend/ (the e2e tests). backend/pyproject.toml and tools/ansys/ruff.toml
+# configure their own folders; ruff always uses the closest configuration.
+line-length = 120
+target-version = "py311"
+
+[lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E741"]

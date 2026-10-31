@@ -1,0 +1,86 @@
+# encoding: utf-8
+# teglab - export the nodal results of every Mechanical system of this Workbench project.
+#
+# Workbench: File > Scripting > Run Script File... > this file.
+# Put teglab_export_nodal.py into the project's user_files folder or next to this journal.
+# Every system gets <user_files>/teglab_export/<system title>/ plus a .zip of it for teglab.
+# Systems must be solved; Mechanical opens in the background and is closed again afterwards.
+
+import os
+import re
+
+SCRIPT_NAME = "teglab_export_nodal.py"
+SYSTEM_FILTER = None      # e.g. ["Dense mesh copy C 10st"] to export only these system titles
+OUTPUT_DIR = None         # None = <project>_files/user_files/teglab_export
+CLOSE_MECHANICAL = True   # close each Mechanical session after its export
+SCRIPT_CONFIG = {}        # overrides of CONFIG in teglab_export_nodal.py, e.g. {"images": False}
+
+
+def _safe(title):
+    return re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_") or "system"
+
+
+def _script_path():
+    candidates = []
+    try:
+        candidates.append(os.path.join(GetUserFilesDirectory(), SCRIPT_NAME))
+    except Exception:
+        pass
+    try:
+        candidates.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), SCRIPT_NAME))
+    except NameError:
+        pass
+    candidates.append(os.path.join(os.getcwd(), SCRIPT_NAME))
+    for path in candidates:
+        if os.path.isfile(path):
+            return path
+    raise Exception("teglab: cannot find " + SCRIPT_NAME + " - looked in: " + "; ".join(candidates))
+
+
+def _command(source, title, out_dir):
+    # settings go in as globals the Mechanical script reads; repr() keeps quotes and backslashes intact
+    head = "TEGLAB_SYSTEM = " + repr(title) + "\n"
+    head += "TEGLAB_OUTPUT_DIR = " + repr(out_dir) + "\n"
+    head += "TEGLAB_CONFIG = " + repr(SCRIPT_CONFIG) + "\n"
+    return head + source
+
+
+def main():
+    with open(_script_path(), "r") as fh:
+        source = fh.read().replace("\r\n", "\n")
+    root = OUTPUT_DIR or os.path.join(GetUserFilesDirectory(), "teglab_export")
+    exported, failed, skipped = [], [], []
+    for system in GetAllSystems():
+        title = system.DisplayText
+        if SYSTEM_FILTER and title not in SYSTEM_FILTER:
+            continue
+        try:
+            model = system.GetContainer(ComponentName="Model")
+        except Exception:
+            skipped.append(title)  # no Mechanical model (Geometry, Engineering Data, ...)
+            continue
+        out_dir = os.path.join(root, _safe(title))
+        try:
+            model.SendCommand(Language="Python", Command=_command(source, title, out_dir))
+            exported.append(title + " -> " + out_dir + ".zip")
+        except Exception as exc:
+            failed.append(title + ": " + str(exc))
+        if CLOSE_MECHANICAL:
+            try:
+                model.Exit()
+            except Exception:
+                pass
+    lines = ["teglab export finished", "exported:"] + ["  " + x for x in exported]
+    if failed:
+        lines += ["failed (see teglab_export.log in each folder):"] + ["  " + x for x in failed]
+    if skipped:
+        lines += ["skipped (no Mechanical model): " + ", ".join(skipped)]
+    report = "\n".join(lines)
+    if not os.path.isdir(root):
+        os.makedirs(root)
+    with open(os.path.join(root, "teglab_export_summary.txt"), "w") as fh:
+        fh.write(report + "\n")
+    print(report)
+
+
+main()

@@ -15,10 +15,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     TEGLAB_DB=/data/teglab.db \
     TEGLAB_STATIC=/app/ui
 WORKDIR /app
-COPY backend/pyproject.toml backend/README.md ./backend/
+COPY backend/pyproject.toml backend/README.md backend/constraints.txt ./backend/
 COPY backend/src ./backend/src
-RUN pip install --no-cache-dir ./backend
+RUN pip install --no-cache-dir -c backend/constraints.txt ./backend
 COPY --from=ui /ui/dist/teglab-ui/browser /app/ui
 VOLUME ["/data"]
 EXPOSE 8000
-CMD ["uvicorn", "teglab.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD ["python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/api/health', timeout=4)"]
+# one worker: uploaded nodal datasets are kept in this process's memory (see api/pipeline_routes.py)
+CMD ["uvicorn", "teglab.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

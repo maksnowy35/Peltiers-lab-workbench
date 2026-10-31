@@ -20,7 +20,9 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from .. import __version__
 from ..demo import seed
+from ..pipeline.nodal import DatasetStore
 from ..store import Store
+from .pipeline_routes import router as pipeline_router
 from .routes import router
 
 
@@ -45,6 +47,7 @@ def create_app(db_path: str | None = None, static_dir: str | None = None, seed_d
     )
     origins = [o.strip() for o in os.environ.get("TEGLAB_CORS", "http://localhost:4200").split(",") if o.strip()]
     app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["*"], allow_headers=["*"])
+    app.state.nodal_store = DatasetStore()  # uploaded nodal datasets, per process
 
     @app.exception_handler(ValueError)
     async def value_error(_: Request, exc: ValueError) -> JSONResponse:
@@ -55,6 +58,7 @@ def create_app(db_path: str | None = None, static_dir: str | None = None, seed_d
         return JSONResponse(status_code=400, content={"detail": str(exc).strip("'\"")})
 
     app.include_router(router)
+    app.include_router(pipeline_router)
 
     if static and Path(static).is_dir():
         root = Path(static).resolve()

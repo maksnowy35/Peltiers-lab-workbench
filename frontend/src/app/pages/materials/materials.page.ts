@@ -290,7 +290,7 @@ export class MaterialsPage {
     try {
       const m = await this.api.uploadMaterial(f, this.uploadName().trim(), this.uploadKind(), this.uploadLimit(), this.uploadDensity());
       await this.ws.refreshMaterials();
-      this.uploadMsg.set(`Added “${m.name}” (${m.t_min_c.toFixed(0)}–${m.t_max_c.toFixed(0)} °C, zT peak ${m.zt_peak.toFixed(2)}).`);
+      this.uploadMsg.set(`Added “${m.name}” (${m.t_min_c.toFixed(0)}-${m.t_max_c.toFixed(0)} °C, zT peak ${m.zt_peak.toFixed(2)}).`);
       if (!(m.id in this.slots())) {
         this.toggleMaterial(m.id);
       }

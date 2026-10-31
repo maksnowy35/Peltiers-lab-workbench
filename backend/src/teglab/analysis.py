@@ -273,7 +273,7 @@ def analyze_case(case: Case, design: PairDesign | None = None, library: Material
                 "warn",
                 "pmax_method",
                 "P_max depends on the fitting method",
-                f"estimates differ by {spread * 100:.1f} % – refine the current sweep near I_opt",
+                f"estimates differ by {spread * 100:.1f} % - refine the current sweep near I_opt",
                 value=spread,
             )
         )

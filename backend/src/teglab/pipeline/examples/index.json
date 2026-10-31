@@ -1,0 +1,32 @@
+[
+  {
+    "name": "outline_fig-3-10_system-D.csv",
+    "title": "Outline of All Parameters - system D",
+    "description": "Parameters P97-P106 of 'Dense mesh copy C 10st' exactly as in thesis Fig. 3.10 (one design point at 0.8 A).",
+    "kind": "parameters"
+  },
+  {
+    "name": "design-points_A-series_QT.csv",
+    "title": "Design points - A0/A5/A10, BC-QT",
+    "description": "Systems A, B, C written as a Workbench design-point table from numbers printed in the thesis (Q_h = 0.3152 W, T_c = 20 °C).",
+    "kind": "parameters"
+  },
+  {
+    "name": "design-points_A0-TT_table-4-4.csv",
+    "title": "Design points - A0, BC-TT",
+    "description": "Case A0-TT (100 °C / 20 °C) from thesis Tables 4.2-4.4: open circuit and three loaded points.",
+    "kind": "parameters"
+  },
+  {
+    "name": "synthetic-cell_contacts-applied.zip",
+    "title": "Nodal export - synthetic cell, contacts applied",
+    "description": "What tools/ansys/teglab_export_nodal.py writes, generated from a synthetic A0 cell at 0.8 A with TCC = 1e5 W/(m²·K) and ECC = 1e9 S/m² (not ANSYS output).",
+    "kind": "nodal"
+  },
+  {
+    "name": "synthetic-cell_bonded.zip",
+    "title": "Nodal export - synthetic cell, bonded contacts",
+    "description": "The same synthetic cell with the contact conductances not applied: the signature of a failed contact definition.",
+    "kind": "nodal"
+  }
+]

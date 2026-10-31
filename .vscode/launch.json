@@ -1,0 +1,54 @@
+{
+  // Run and Debug (Ctrl+Shift+D). Python configurations use the interpreter selected for the workspace.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Backend: API (debug)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "teglab",
+      "args": ["--port", "8000"],
+      "cwd": "${workspaceFolder}/backend",
+      "env": { "TEGLAB_DB": "data/teglab.db" },
+      "justMyCode": true
+    },
+    {
+      "name": "Backend: pytest (current file)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "-q", "-o", "addopts="],
+      "cwd": "${workspaceFolder}/backend",
+      "justMyCode": false
+    },
+    {
+      "name": "Pipeline CLI: run the thesis examples",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "teglab.pipeline",
+      "args": [
+        "run",
+        "src/teglab/pipeline/examples/design-points_A-series_QT.csv",
+        "src/teglab/pipeline/examples/outline_fig-3-10_system-D.csv",
+        "--current", "0.8",
+        "--system", "A=A0", "--system", "B=A5", "--system", "C=A10"
+      ],
+      "cwd": "${workspaceFolder}/backend"
+    },
+    {
+      "name": "Frontend: Chrome (needs the dev server)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:4200",
+      "webRoot": "${workspaceFolder}/frontend"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full stack: API (debug) + Chrome",
+      "configurations": ["Backend: API (debug)", "Frontend: Chrome (needs the dev server)"],
+      "preLaunchTask": "frontend: dev server",
+      "stopAll": true
+    }
+  ]
+}

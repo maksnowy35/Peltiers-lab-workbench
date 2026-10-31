@@ -1,6 +1,6 @@
 """The calibrated 1D model against the numbers printed in the thesis.
 
-Calibration uses A0-TT only (Tables 4.2–4.4).  Everything else is a prediction.
+Calibration uses A0-TT only (Tables 4.2-4.4).  Everything else is a prediction.
 A5/A10 match the thesis only with ideal (bonded) contacts - see docs/validation.md.
 """
 

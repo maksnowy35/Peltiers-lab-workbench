@@ -395,7 +395,7 @@ def default_library() -> MaterialLibrary:
             [0.75, 0.73, 0.72, 0.72, 0.74, 0.78],
             300,
             6.3,
-            "Tellurium-free alternative to BiSbTe for 25–300 °C.",
+            "Tellurium-free alternative to BiSbTe for 25-300 °C.",
         ),
         _tab(
             "mg3sbbi_n",

@@ -15,7 +15,7 @@ The same comparisons run as unit tests (`tests/test_thesis_validation.py`).
 
 ## 1 · Calibration on A0-TT only
 
-Three lumped parameters are fitted to thesis Tables 4.2–4.4 (prismatic legs, 100 °C / 20 °C):
+Three lumped parameters are fitted to thesis Tables 4.2-4.4 (prismatic legs, 100 °C / 20 °C):
 the ceramic + Cu thermal resistance on each side (3D spreading) and a series-resistance correction.
 
 | parameter | fitted value |
@@ -47,10 +47,10 @@ Heat balance vs current (Table 4.4):
 | 0.8 | 0.42145 | 0.42149 | 0.40848 | 0.40852 | 12.966 | 12.968 |
 | 1.8 | 0.53880 | 0.53888 | 0.54068 | 0.54075 | −1.887 | −1.871 |
 
-**Observation – the 17.26 mΩ is not purely ohmic.** The electrical resistance of the calibrated model is
+**Observation - the 17.26 mΩ is not purely ohmic.** The electrical resistance of the calibrated model is
 16.47 mΩ (legs 14.29 + four contacts 2.04 + Cu bridge ≈ 0.15 mΩ). The U(I) regression gives 17.26 mΩ because
-under current the Peltier heat increases the heat flow through the passive layers, so ΔT_TE – and with it the
-EMF – drops by ≈ 1.6 K at 0.8 A. About 0.8 mΩ of the regression slope is this thermal effect, not
+under current the Peltier heat increases the heat flow through the passive layers, so ΔT_TE - and with it the
+EMF - drops by ≈ 1.6 K at 0.8 A. About 0.8 mΩ of the regression slope is this thermal effect, not
 current crowding in the copper.
 
 ## 2 · Predictions for the tapered variants (BC-QT, no further fitting)
@@ -60,20 +60,20 @@ The frustum 3D coefficient c3d = 0.5 (R₃D = R₁D·(1 + c3d·tan²θ)) reprodu
 
 | variant | contacts in model | T_h,ext [°C] | ΔT_TE [K] | U_oc [mV] | K [mW/K] | P_max [mW] | T_max at 1.6 A [°C] |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| **A0 thesis** | – | 100.04 | 75.11 | 30.024 | 4.196 | 7.66 ¹ | 55.62 |
+| **A0 thesis** | - | 100.04 | 75.11 | 30.024 | 4.196 | 7.66 ¹ | 55.62 |
 | A0 | finite TCC/ECC | 100.00 | 75.05 | 30.019 | 4.200 | 7.63 | 55.52 |
 | A0 | ideal | 98.39 | 75.05 | 30.019 | 4.200 | 8.21 | 53.41 |
-| **A5 thesis** | – | 114.74 | 91.32 | 36.531 | 3.451 | 9.91 ¹ | 60.03 |
+| **A5 thesis** | - | 114.74 | 91.32 | 36.531 | 3.451 | 9.91 ¹ | 60.03 |
 | A5 | finite TCC/ECC | 116.64 | 91.31 | 36.525 | 3.452 | 9.16 | 62.76 |
 | A5 | ideal | 114.65 | 91.31 | 36.525 | 3.452 | 9.86 | 59.88 |
-| **A10 thesis** | – | 141.31 | 117.80 | 47.137 | 2.676 | 12.54 ¹ | 70.56 |
+| **A10 thesis** | - | 141.31 | 117.80 | 47.137 | 2.676 | 12.54 ¹ | 70.56 |
 | A10 | finite TCC/ECC | 143.80 | 117.73 | 47.093 | 2.677 | 11.54 | 74.91 |
 | A10 | ideal | 141.07 | 117.73 | 47.093 | 2.677 | 12.45 | 70.35 |
 
 ¹ parabola through I = 0, 0.4, 0.8 A (thesis method); the model value is the true maximum.
 
 A0 matches the thesis with the contacts that the thesis defines (TCC = 10⁵ W/(m²·K), ECC = 10⁹ S/m²).
-**A5 and A10 match only when the contacts are ideal** – hot-face temperature, T_max at 1.6 A and
+**A5 and A10 match only when the contacts are ideal** - hot-face temperature, T_max at 1.6 A and
 P_max all agree within ≈ 0.5 % in that case and are clearly off with finite contacts.
 
 ### A10-QT at I = 0.8 A (Table 3.5, mesh C1)
@@ -91,7 +91,7 @@ P_max all agree within ≈ 0.5 % in that case and are clearly off with finite co
 The same conclusion follows from the thesis numbers alone, without any model: with α = 400 µV/K the
 implied internal resistance is (α·ΔT_TE − U)/I = (0.4·76.159 − 12.384)/0.8 = **22.6 mΩ**. Legs (22.4 mΩ
 with the 3D correction) plus the Cu bridge already give 22.56 mΩ; the four contacts of 1/(ECC·A) would add
-another 3.5 mΩ (26.0 mΩ in total). Likewise the passive temperature drop of A5/A10 (3.4–3.5 K) is smaller
+another 3.5 mΩ (26.0 mΩ in total). Likewise the passive temperature drop of A5/A10 (3.4-3.5 K) is smaller
 than that of A0 (4.9 K) although the hot contact area shrank.
 
 **Likely cause:** in analysis systems B and C (copies of A with replaced geometry) the contact regions fell
@@ -100,17 +100,17 @@ checking in Mechanical → Connections → Contacts → each contact region → 
 *Electric Conductance* = Manual with the parameter values. The importer runs this check automatically
 (“Implied internal resistance” and “Hot-side passive resistance” on the Analysis page).
 
-## 3 · Fair comparison – every variant with the same contacts
+## 3 · Fair comparison - every variant with the same contacts
 
 | variant | P_max [mW] | gain vs A0 | η at P_max | T_h,ext at open circuit [°C] |
 | --- | --- | --- | --- | --- |
-| A0 | 7.63 | – | 2.42 % | 100.0 |
+| A0 | 7.63 | - | 2.42 % | 100.0 |
 | A5 | 9.16 | +20.1 % | 2.91 % | 116.6 |
 | A10 | 11.54 | +51.3 % | 3.66 % | 143.8 |
 | A15 | 15.68 | +105.5 % | 4.97 % | 195.4 |
 
-With identical contact definitions the gains are +20 % (A5) and +51 % (A10) – slightly below the analytic
-+21.2 % / +54.4 % of thesis Table 5.3, as expected once ΔT collapses under current – instead of the
+With identical contact definitions the gains are +20 % (A5) and +51 % (A10) - slightly below the analytic
++21.2 % / +54.4 % of thesis Table 5.3, as expected once ΔT collapses under current - instead of the
 +29.4 % / +63.7 % obtained with contacts only in the reference system. The qualitative conclusions of the
 thesis (taper helps under fixed heat input; the gain comes from lower K, not from better material) stand.
 

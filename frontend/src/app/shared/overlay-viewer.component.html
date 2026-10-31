@@ -1,0 +1,141 @@
+<div class="ov">
+  <div class="ov-controls">
+    <label class="field">
+      <span class="field-label">View</span>
+      <select (change)="setView($event)">
+        @for (v of views; track v) {
+          <option [value]="v" [selected]="v === view()">{{ viewLabel[v] }}</option>
+        }
+      </select>
+    </label>
+    <label class="field">
+      <span class="field-label">Quantity</span>
+      <select (change)="setQuantity($event)">
+        @for (q of dataset().quantities; track q) {
+          <option [value]="q" [selected]="q === quantity()">{{ nodalLabel[q] }}</option>
+        }
+      </select>
+    </label>
+    <label class="field">
+      <span class="field-label">Picture</span>
+      <select (change)="onSelectImage($event)">
+        <option value="" [selected]="!imageKey()">none</option>
+        @for (img of images(); track img.key) {
+          <option [value]="img.key" [selected]="img.key === imageKey()">{{ img.label }}</option>
+        }
+      </select>
+    </label>
+    <label class="btn small upload">
+      Upload PNG…
+      <input type="file" accept="image/png,image/jpeg" (change)="onUpload($event)" />
+    </label>
+    <label class="check small">
+      <input type="checkbox" [checked]="surfaceOnly()" (change)="setFlag('surface', $event)" />
+      visible faces only
+    </label>
+    <label class="check small">
+      <input type="checkbox" [checked]="showPoints()" (change)="setFlag('points', $event)" />
+      nodes
+    </label>
+    <label class="field slider">
+      <span class="field-label">Picture opacity · {{ opacity() * 100 | n: 3 }} %</span>
+      <input type="range" min="0" max="1" step="0.05" [value]="opacity()" (input)="setSlider('opacity', $event)" />
+    </label>
+    <label class="field slider">
+      <span class="field-label">Node size · {{ markerSize() }} px</span>
+      <input type="range" min="2" max="12" step="1" [value]="markerSize()" (input)="setSlider('size', $event)" />
+    </label>
+  </div>
+
+  @if (image(); as img) {
+    <div class="status">
+      <span [class]="'badge ' + (calibration() ? (img.calibrationSource === 'camera' && !picks().length ? 'warn' : 'ok') : 'warn')">
+        <span class="ico" aria-hidden="true">{{ calibration() ? '✓' : '!' }}</span>Calibration
+      </span>
+      <span class="muted small">{{ calibrationNote() }}</span>
+      @if (placement(); as pl) {
+        <span class="muted small">· {{ pl.mm_per_px[0] * 1000 | n: 3 }} µm per pixel</span>
+      }
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost small" (click)="calibrating.set(!calibrating())">
+        {{ calibrating() ? 'Hide calibration' : 'Recalibrate' }}
+      </button>
+    </div>
+
+    @if (calibrating()) {
+      <div class="cal">
+        <div class="row">
+          <strong class="small">Calibrate the picture</strong>
+          <span class="spacer"></span>
+          <div class="seg" role="group" aria-label="Calibration method">
+            <button type="button" [class.on]="mode() === 'fit'" [attr.aria-pressed]="mode() === 'fit'" (click)="setMode('fit')">
+              Part corners
+            </button>
+            <button type="button" [class.on]="mode() === 'manual'" [attr.aria-pressed]="mode() === 'manual'" (click)="setMode('manual')">
+              Two known points
+            </button>
+          </div>
+        </div>
+        @if (mode() === 'fit') {
+          <p class="muted small">
+            Click two opposite corners of the part's outline (any order). They are matched to the extent of the nodal
+            data in this view:
+            @if (points(); as pts) {
+              {{ pts.h_label }} {{ pts.h_range_mm[0] | n: 4 }} … {{ pts.h_range_mm[1] | n: 4 }},
+              {{ pts.v_label }} {{ pts.v_range_mm[0] | n: 4 }} … {{ pts.v_range_mm[1] | n: 4 }}.
+            }
+            Use an orthographic, axis-aligned view without legend overlap.
+          </p>
+        } @else {
+          <p class="muted small">Click point 1 and point 2 on the picture, then enter their model coordinates [mm].</p>
+          <div class="fields">
+            <app-num label="Point 1 · h" unit="mm" [value]="manualModel()[0][0]" (valueChange)="setManual(0, 0, $event)" />
+            <app-num label="Point 1 · v" unit="mm" [value]="manualModel()[0][1]" (valueChange)="setManual(0, 1, $event)" />
+            <app-num label="Point 2 · h" unit="mm" [value]="manualModel()[1][0]" (valueChange)="setManual(1, 0, $event)" />
+            <app-num label="Point 2 · v" unit="mm" [value]="manualModel()[1][1]" (valueChange)="setManual(1, 1, $event)" />
+          </div>
+        }
+        <div class="cal-img">
+          <img [src]="img.url" [alt]="'Contour picture ' + img.label + ' - click to pick reference points'" (click)="pick($event)" />
+          @for (p of picks(); track $index) {
+            <span class="pick" [style.left]="pickStyle(p).left" [style.top]="pickStyle(p).top">{{ $index + 1 }}</span>
+          }
+        </div>
+        <div class="row">
+          <span class="muted small">
+            {{ picks().length }} of 2 points picked
+            @for (p of picks(); track $index) {
+              · #{{ $index + 1 }} ({{ p[0] | n: 4 }}, {{ p[1] | n: 4 }}) px
+            }
+          </span>
+          <span class="spacer"></span>
+          <button type="button" class="btn ghost small" (click)="picks.set([])" [disabled]="!picks().length">Clear</button>
+          <button type="button" class="btn small" (click)="calibrating.set(false)" [disabled]="!calibration()">Done</button>
+        </div>
+      </div>
+    }
+  }
+
+  @if (error()) {
+    <div class="notice error" role="alert">{{ error() }}</div>
+  }
+
+  <div class="plot-wrap" [class.busy]="loading()">
+    <div #plot class="ov-plot" role="img"
+         [attr.aria-label]="'Nodal ' + nodalLabel[quantity()] + ' in the ' + view() + ' view' + (image() ? ' over ' + image()!.label : '')"></div>
+    @if (!points() && !error()) {
+      <div class="empty">Loading nodes…</div>
+    }
+  </div>
+  @if (points(); as pts) {
+    <div class="row">
+      <p class="muted small">
+        {{ pts.n_returned }} of {{ pts.n_total }} nodes{{ surfaceOnly() ? ' on visible faces' : '' }} ·
+        {{ nodalLabel[pts.quantity] }} {{ pts.value_range[0] | n: 5 }} … {{ pts.value_range[1] | n: 5 }} {{ pts.unit }} ·
+        hover a node for its exact value - the picture only guides the eye.
+      </p>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost small" (click)="downloadCsv()">Download nodes (CSV)</button>
+    </div>
+  }
+</div>

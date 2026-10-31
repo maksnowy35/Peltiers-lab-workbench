@@ -1,6 +1,6 @@
 # The 1D thermoelectric pair model
 
-`teglab.solver` solves one P–N pair (unit cell of a module) in steady state. It is designed as a *fast
+`teglab.solver` solves one P-N pair (unit cell of a module) in steady state. It is designed as a *fast
 surrogate* of the 3D ANSYS Thermal-Electric model: milliseconds per operating point, so geometry and
 material studies with thousands of evaluations stay interactive, while a handful of lumped parameters are
 calibrated against the FEM results.
@@ -41,7 +41,7 @@ d/dx(κA dT/dx) + ρI²/A − τ I dT/dx = 0
 | ceramic plate (per side, shared by both legs) | t/(k·A_cer) × side factor | insulator |
 | Cu electrode (per leg and side) | t/(k·A_Cu) × side factor | bridge + terminal path ρ·L/(t·w) |
 | metallized joint (4 per pair) | 1/(TCC·A_end) | 1/(ECC·A_end) |
-| series correction | – | ΔR (calibration) |
+| series correction | - | ΔR (calibration) |
 
 The Joule heat of a joint is deposited half on each side of it. A_cer defaults to the pair footprint
 (2a + g)·a. Side walls can lose heat to the ambient with a coefficient h (radiation + convection, thesis eq. 3.24).
@@ -60,15 +60,15 @@ manufacturing limit is hit, and BC-TT always prefers the prism.
 
 ## Operating points
 
-* `solve(model, I)` – prescribed current (as in the ANSYS current sweep);
-* `solve_for_load(model, R_L)` – external load;
-* `max_power`, `max_efficiency` – bounded Brent search on I;
-* `short_circuit_current` – U = 0 (under BC-QT well below EMF/R_int).
+* `solve(model, I)` - prescribed current (as in the ANSYS current sweep);
+* `solve_for_load(model, R_L)` - external load;
+* `max_power`, `max_efficiency` - bounded Brent search on I;
+* `short_circuit_current` - U = 0 (under BC-QT well below EMF/R_int).
 
 ## Calibration
 
 `teglab.calibration.calibrate` fits any subset of: hot/cold ceramic+Cu factors, series-resistance correction,
-c3d, Seebeck scale, TCC, ECC – by least squares on U, P, Q_h, Q_c and the leg-end/face temperatures of the
+c3d, Seebeck scale, TCC, ECC - by least squares on U, P, Q_h, Q_c and the leg-end/face temperatures of the
 selected cases (each case solved with its own geometry, boundary condition and contact setting). Residuals are
 normalized by the case's voltage/heat scale and by the temperature rise.
 
@@ -76,4 +76,4 @@ normalized by the case's voltage/heat scale and by the temperature rise.
 
 * Steady state only; no thermomechanics (stress in the narrow end must be checked separately).
 * Current crowding at electrode edges and non-uniform contact pressure are lumped into ΔR.
-* Material curves in the built-in library are representative, not measured – upload your own data.
+* Material curves in the built-in library are representative, not measured - upload your own data.

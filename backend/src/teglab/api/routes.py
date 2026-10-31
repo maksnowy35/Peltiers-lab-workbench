@@ -191,7 +191,7 @@ def import_commit(req: ImportCommitRequest, store: Store = Depends(get_store)) -
         time_to_current=req.time_to_current,
     )
     if not cases:
-        raise HTTPException(400, "no case could be built – check the column mapping")
+        raise HTTPException(400, "no case could be built - check the column mapping")
     store.add_cases(cases)
     return {"cases": [_case_summary(c) for c in cases], "notes": notes}
 

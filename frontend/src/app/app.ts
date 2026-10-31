@@ -24,6 +24,7 @@ export class App {
   protected readonly nav: NavItem[] = [
     { path: '/', label: 'Overview', step: '·' },
     { path: '/import', label: 'Data import', step: '1' },
+    { path: '/pipeline', label: 'ANSYS pipeline', step: 'P' },
     { path: '/analysis', label: 'Analysis', step: '2' },
     { path: '/model', label: 'Model & calibration', step: '3' },
     { path: '/optimizer', label: 'Optimizer', step: '4' },

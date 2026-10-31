@@ -18,15 +18,16 @@ type PlotlyApi = typeof import('plotly.js-dist-min').default;
 
 let plotlyLoader: Promise<PlotlyApi> | null = null;
 
-/** plotly.js is ~4.5 MB, so it is loaded lazily the first time a chart is shown. */
-function loadPlotly(): Promise<PlotlyApi> {
+/** plotly.js is ~4.5 MB, so it is loaded lazily the first time a chart is shown (shared by every chart). */
+export function loadPlotly(): Promise<PlotlyApi> {
   plotlyLoader ??= import('plotly.js-dist-min').then((m) => m.default);
   return plotlyLoader;
 }
 
 export interface PlotTrace {
   name?: string;
-  x: (number | null)[];
+  /** numbers, or category labels for bar charts */
+  x: (number | string | null)[];
   y: (number | null)[];
   mode?: 'lines' | 'markers' | 'lines+markers';
   /** categorical palette slot (0-based, fixed order - color follows the entity) */
@@ -136,6 +137,8 @@ export class PlotComponent {
   readonly legend = input(true);
   /** shallow-merged into layout.xaxis / layout.yaxis (e.g. custom tick labels) */
   readonly layoutPatch = input<{ xaxis?: object; yaxis?: object }>({});
+  /** bar layout for several bar traces; bars then get a 2px surface gap between fills */
+  readonly barMode = input<'group' | 'stack' | null>(null);
 
   readonly showTable = signal(false);
   private readonly host = viewChild.required<ElementRef<HTMLDivElement>>('host');
@@ -166,12 +169,12 @@ export class PlotComponent {
     const first = traces[0]?.x ?? [];
     const shared = traces.every((t) => t.x.length === first.length && t.x.every((v, k) => v === first[k]));
     if (shared && traces.length) {
-      const rows = first.map((xv, k) => [sig(xv, 5, xs), ...traces.map((t) => sig(t.y[k] ?? null, 5, ys))]);
+      const rows = first.map((xv, k) => [cell(xv, xs), ...traces.map((t) => sig(t.y[k] ?? null, 5, ys))]);
       return { columns: [this.xTitle() || 'x', ...traces.map((t, k) => t.name ?? `series ${k + 1}`)], rows };
     }
     const rows: string[][] = [];
     for (const [k, t] of traces.entries()) {
-      t.x.forEach((xv, i) => rows.push([t.name ?? `series ${k + 1}`, sig(xv, 5, xs), sig(t.y[i] ?? null, 5, ys)]));
+      t.x.forEach((xv, i) => rows.push([t.name ?? `series ${k + 1}`, cell(xv, xs), sig(t.y[i] ?? null, 5, ys)]));
     }
     return { columns: ['series', this.xTitle() || 'x', this.yTitle() || 'y'], rows: rows.slice(0, 600) };
   });
@@ -193,6 +196,7 @@ export class PlotComponent {
         yZero: this.yZero(),
         legend: this.legend(),
         layoutPatch: this.layoutPatch(),
+        barMode: this.barMode(),
         ink: this.theme.ink(),
         visible: this.hasData() && !this.showTable(),
       };
@@ -224,6 +228,7 @@ export class PlotComponent {
       yZero: boolean;
       legend: boolean;
       layoutPatch: { xaxis?: object; yaxis?: object };
+      barMode: 'group' | 'stack' | null;
       ink: ChartInk;
     },
   ): Promise<void> {
@@ -255,7 +260,7 @@ export class PlotComponent {
     for (const t of s.traces) {
       const color = t.muted ? ink.muted : ink.series[(t.slot ?? 0) % ink.series.length];
       const mode = t.mode ?? 'lines';
-      const x = t.x.map((v) => (v === null ? null : v * s.xScale));
+      const x = t.x.map((v) => (typeof v === 'number' ? v * s.xScale : v));
       const y = t.y.map((v) => (v === null ? null : v * s.yScale));
       if (t.type === 'bar') {
         data.push({
@@ -263,7 +268,7 @@ export class PlotComponent {
           x,
           y,
           name: t.name,
-          marker: { color, cornerradius: 4 },
+          marker: s.barMode ? { color, cornerradius: 4, line: { color: ink.surface, width: 2 } } : { color, cornerradius: 4 },
           textposition: 'none',
           hovertext: t.text,
           showlegend: named >= 2 && t.showInLegend !== false,
@@ -321,7 +326,8 @@ export class PlotComponent {
       hoverlabel: { bgcolor: ink.surface, bordercolor: ink.axis, font: { color: ink.text, size: 12 } },
       hoverdistance: 24,
       spikedistance: -1,
-      bargap: 0.55,
+      bargap: s.barMode === 'group' ? 0.35 : 0.55,
+      ...(s.barMode ? { barmode: s.barMode } : {}),
       barcornerradius: 4,
       shapes: s.shapes,
       annotations: s.annotations,
@@ -343,4 +349,8 @@ export class PlotComponent {
       this.resizeObs.observe(el);
     }
   }
+}
+
+function cell(v: number | string | null, scale: number): string {
+  return typeof v === 'string' ? v : sig(v, 5, scale);
 }

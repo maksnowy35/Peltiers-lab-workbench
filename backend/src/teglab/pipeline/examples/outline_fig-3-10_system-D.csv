@@ -1,0 +1,13 @@
+ID,Parameter Name,Value,Unit
+Dense mesh copy C 10st (D1),,,
+P97,Reaction Probe 2 Heat,-0.30505,W
+P99,Voltage Probe Electric Voltage,0.012385,V
+P100,Total Current Density Average,8.7566E+05,A m^-2
+P101,Total Current Density Maximum,3.7328E+06,A m^-2
+P102,T_max_global Maximum,99.628,C
+P103,Electric Voltage Average,0.0061923,V
+P104,Joule Heat Average,2.1012E+06,W m^-3
+P105,Temperature Average,97.501,C
+P106,T_leg_cold_avg Average,21.314,C
+New output parameter,,New expression,
+Charts,,,

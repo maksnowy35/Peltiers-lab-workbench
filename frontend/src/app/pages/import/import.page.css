@@ -1,48 +1,5 @@
-.drop {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  min-height: 116px;
-  padding: 16px;
-  border: 1.5px dashed var(--line-strong);
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  text-align: center;
-  cursor: pointer;
-}
-
-.drop.over {
-  border-color: var(--accent);
-  background: var(--accent-wash);
-}
-
-.drop input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-}
-
 .files {
   margin-top: 10px;
-}
-
-.examples {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.examples li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
 }
 
 .notes {

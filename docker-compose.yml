@@ -1,4 +1,6 @@
 # docker compose up --build   ->   http://localhost:8000  (UI + API, docs at /docs)
+# Cases and materials persist in the teglab-data volume; uploaded nodal datasets live in memory
+# (up to 8, expiring after 4 h idle) - keep a single container/worker.
 services:
   teglab:
     build: .

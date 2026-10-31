@@ -1,0 +1,60 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <h1>ANSYS pipeline</h1>
+      <p>
+        Raw Workbench and Mechanical exports in, physics out. A project profile maps the exact ANSYS names to canonical
+        quantities; the pipeline splits R_int into ohmic, contact and thermal-feedback parts, finds P_max and attributes
+        the gains of the leg variants. Nodal exports resolve every layer and contact; contour pictures overlay the nodes.
+      </p>
+    </div>
+    <div class="seg tabs" role="tablist" aria-label="Pipeline sections">
+      @for (t of tabs; track t.id) {
+        <button type="button" role="tab" [id]="'tab-' + t.id" [attr.aria-selected]="active() === t.id"
+                [attr.aria-controls]="'panel-' + t.id" [class.on]="active() === t.id" (click)="select(t.id)">
+          {{ t.label }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @switch (active()) {
+    @case ('parameters') {
+      <app-parameters-panel id="panel-parameters" role="tabpanel" aria-labelledby="tab-parameters" />
+    }
+    @case ('nodal') {
+      <app-nodal-panel id="panel-nodal" role="tabpanel" aria-labelledby="tab-nodal" />
+    }
+    @case ('overlay') {
+      <div id="panel-overlay" role="tabpanel" aria-labelledby="tab-overlay">
+        @if (state.dataset(); as ds) {
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>Overlay · {{ ds.title ?? 'nodal dataset' }}</h2>
+                <p>
+                  Nodes projected onto a standard view, drawn over a contour picture from the export or your own PNG.
+                  Calibrated pictures are placed automatically; otherwise two clicks calibrate them.
+                </p>
+              </div>
+            </div>
+            <app-overlay-viewer [dataset]="ds" />
+          </div>
+        } @else {
+          <div class="card">
+            <div class="empty">
+              <p>The overlay needs a nodal dataset.</p>
+              <div class="row center">
+                <button type="button" class="btn primary" [disabled]="state.nodalBusy()" (click)="loadDemo()">Load the synthetic demo</button>
+                <button type="button" class="btn" (click)="select('nodal')">Upload an export</button>
+              </div>
+              @if (state.nodalError()) {
+                <div class="notice error" role="alert">{{ state.nodalError() }}</div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</section>

@@ -1,0 +1,21 @@
+# Exact versions the test suite passed with - install with
+#   pip install -e ".[dev]" -c constraints.txt        (from backend/)
+# The Docker image and CI use the same file, so every environment runs the same stack.
+# To upgrade: raise a pin, run `pytest` and `ruff check .`, commit the new pin with the result.
+
+# runtime
+fastapi==0.141.1
+starlette==1.0.0
+uvicorn==0.46.0
+pydantic==2.13.3
+pydantic-core==2.46.3
+numpy==2.4.4
+pandas==3.0.2
+scipy==1.17.1
+openpyxl==3.1.5
+python-multipart==0.0.26
+
+# development
+pytest==9.1.1
+httpx==0.28.1
+ruff==0.15.11

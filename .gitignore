@@ -1,26 +1,59 @@
-# Python
+# ---------------------------------------------------------------- Python
 __pycache__/
 *.py[cod]
 *.egg-info/
+.eggs/
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+/.venv/
 .venv/
 venv/
 build/
+backend/dist/
 
-# local data (SQLite store of imported cases)
-backend/data/
+# local data: SQLite store of imported cases (created on first start)
+/backend/data/
+/data/
 *.db
+*.sqlite3
 
-# Node / Angular
+# ---------------------------------------------------------------- Node / Angular
 node_modules/
 frontend/dist/
 frontend/.angular/
 frontend/out-tsc/
+npm-debug.log*
 
-# editors / OS
+# ---------------------------------------------------------------- end-to-end tests (Playwright)
+e2e/.artifacts/
+test-results/
+playwright-report/
+
+# ---------------------------------------------------------------- never publish
+# ANSYS projects, result files and exports (licensed models, large binaries), archives, secrets
+*.wbpj
+*.mechdb
+*.rst
+*.rth
+*_files/
+teglab_export/
+*.zip
+.env
+.env.*
+# the private roadmap, if it ever lands in the repository folder
+teglab-roadmap*.md
+
+# ---------------------------------------------------------------- editors / OS
 .vscode/*
+!.vscode/settings.json
 !.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
 .idea/
+*.swp
 .DS_Store
 Thumbs.db
+desktop.ini

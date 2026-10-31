@@ -639,3 +639,70 @@ hr.sep {
 .swatch[data-slot="5"] { background: var(--s6); }
 .swatch[data-slot="6"] { background: var(--s7); }
 .swatch[data-slot="7"] { background: var(--s8); }
+
+/* ------------------------------------------------------------------ uploads & lists */
+.drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 116px;
+  padding: 16px;
+  border: 1.5px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.drop.over {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+}
+
+.drop input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.examples {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.examples li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px 12px;
+}
+
+.examples li > div:first-child {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.issues {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.issues li {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}

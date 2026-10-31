@@ -62,7 +62,7 @@ def main() -> None:
     d0 = reference_design()
     d0.passive.hot_side_factor = d0.passive.cold_side_factor = 1.0
     cal = calibrate(d0, [case], ["hot_side_factor", "cold_side_factor", "r_el_extra_mohm"])
-    print("## Calibration on A0-TT (thesis Tables 4.2–4.4)\n")
+    print("## Calibration on A0-TT (thesis Tables 4.2-4.4)\n")
     print(row("parameter", "fitted value"))
     print(row("---", "---"))
     for k, v in cal["params"].items():
@@ -134,7 +134,7 @@ def main() -> None:
         print(
             row(
                 f"**{name} thesis**",
-                "–",
+                "-",
                 ref["t_hot_ext_c"],
                 ref["dt_te_k"],
                 f"{ref['u_oc_v'] * 1e3:.3f}",

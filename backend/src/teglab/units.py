@@ -11,7 +11,7 @@ from __future__ import annotations
 import math
 import re
 
-__all__ = ["normalize_unit", "unit_dimension", "to_canonical", "CANONICAL"]
+__all__ = ["normalize_unit", "unit_dimension", "conversion", "to_canonical", "CANONICAL"]
 
 # dimension -> canonical unit label
 CANONICAL = {
@@ -21,6 +21,7 @@ CANONICAL = {
     "current": "A",
     "current_density": "A/m²",
     "volumetric_heat": "W/m³",
+    "heat_flux": "W/m²",
     "length": "mm",
     "angle": "deg",
     "tcc": "W/(m²·K)",
@@ -63,10 +64,18 @@ _reg("power", 1e-6, 0.0, "uw")
 _reg("power", 1e3, 0.0, "kw")
 _reg("current", 1.0, 0.0, "a", "amp")
 _reg("current", 1e-3, 0.0, "ma")
+# Mechanical's "mm, mV, mA" unit systems export mA/mm², mW/mm², mW/mm³.  "MA/m²" and "mA/m²" fold to the
+# same string, so neither is guessed.
 _reg("current_density", 1.0, 0.0, "am-2", "a/m2")
-_reg("current_density", 1e6, 0.0, "amm-2", "a/mm2", "ma/m2")
+_reg("current_density", 1e6, 0.0, "amm-2", "a/mm2")
+_reg("current_density", 1e3, 0.0, "mamm-2", "ma/mm2")
+_reg("current_density", 1e4, 0.0, "acm-2", "a/cm2")
 _reg("volumetric_heat", 1.0, 0.0, "wm-3", "w/m3")
 _reg("volumetric_heat", 1e9, 0.0, "wmm-3", "w/mm3")
+_reg("volumetric_heat", 1e6, 0.0, "mwmm-3", "mw/mm3")
+_reg("heat_flux", 1.0, 0.0, "wm-2", "w/m2")
+_reg("heat_flux", 1e6, 0.0, "wmm-2", "w/mm2")
+_reg("heat_flux", 1e3, 0.0, "mwmm-2", "mw/mm2")
 _reg("length", 1e3, 0.0, "m")
 _reg("length", 1.0, 0.0, "mm")
 _reg("length", 1e-3, 0.0, "um", "micron")
@@ -91,24 +100,36 @@ def unit_dimension(unit: str | None) -> str | None:
     return info[0] if info else None
 
 
+def conversion(unit: str | None, dimension: str) -> tuple[float, float, str | None]:
+    """Linear map ``canonical = value * factor + offset`` from ``unit`` to the canonical unit of ``dimension``.
+
+    Returns (factor, offset, note).  A missing or unknown unit, or a unit of another dimension,
+    yields the identity map and an explanatory note - callers decide whether that is acceptable.
+    """
+    if dimension in ("dimensionless", "label", ""):
+        return 1.0, 0.0, None
+    u = normalize_unit(unit)
+    if not u:
+        return 1.0, 0.0, f"no unit given; assumed {CANONICAL.get(dimension, '')}"
+    info = _UNITS.get(u)
+    if info is None:
+        return 1.0, 0.0, f"unknown unit '{unit}'; assumed {CANONICAL.get(dimension, '')}"
+    dim, factor, offset = info
+    if dim != dimension:
+        return 1.0, 0.0, f"unit '{unit}' is {dim}, expected {dimension}; values left unconverted"
+    return factor, offset, None
+
+
 def to_canonical(values: list[float | None], unit: str | None, dimension: str) -> tuple[list[float | None], str | None]:
     """Convert values to the canonical unit of ``dimension``.
 
     Returns (converted, note).  If the unit is missing or unknown the values
     are assumed to be canonical already and a note is returned.
     """
-    if dimension in ("dimensionless", "label", ""):
-        return values, None
-    u = normalize_unit(unit)
-    info = _UNITS.get(u)
-    if not u:
-        return values, f"no unit given; assumed {CANONICAL.get(dimension, '')}"
-    if info is None:
-        return values, f"unknown unit '{unit}'; assumed {CANONICAL.get(dimension, '')}"
-    dim, factor, offset = info
-    if dim != dimension:
-        return values, f"unit '{unit}' is {dim}, expected {dimension}; values left unconverted"
-    return [None if v is None else v * factor + offset for v in values], None
+    factor, offset, note = conversion(unit, dimension)
+    if factor == 1.0 and offset == 0.0:
+        return values, note
+    return [None if v is None else v * factor + offset for v in values], note
 
 
 _BRACKET = re.compile(r"^(.*?)[\s_]*[\[(]([^\[\]()]+)[\])]\s*$")

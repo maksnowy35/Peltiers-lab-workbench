@@ -72,12 +72,12 @@
             <app-num label="R sink" unit="K/W" [value]="rSink()" (valueChange)="rSink.set($event)" />
           }
           @default {
-            <p class="muted small span-all">{{ ws.designLabel() }} – <a routerLink="/model">edit</a></p>
+            <p class="muted small span-all">{{ ws.designLabel() }} - <a routerLink="/model">edit</a></p>
           }
         }
       </div>
       @if (bc() === 'HX') {
-        <p class="muted small">A finite hot-side exchanger makes the optimum a matter of thermal impedance matching – there is a true interior optimum.</p>
+        <p class="muted small">A finite hot-side exchanger makes the optimum a matter of thermal impedance matching - there is a true interior optimum.</p>
       }
 
       <p class="section-title" style="margin-top: 14px">Limits</p>
@@ -142,7 +142,7 @@
               <app-stat label="Power per volume" [value]="o.power_per_volume_mw_mm3 | n: 3" unit="mW/mm³" />
             </div>
           } @else {
-            <div class="notice warn">No design satisfies all limits – relax the limits or change the range.</div>
+            <div class="notice warn">No design satisfies all limits - relax the limits or change the range.</div>
           }
         </div>
 
@@ -163,7 +163,7 @@
               }
             </div>
             <label class="field" style="margin-top: 10px">
-              <span class="field-label">Currents [A] – dense around I_opt</span>
+              <span class="field-label">Currents [A] - dense around I_opt</span>
               <input type="text" [value]="exportCurrents()" (change)="setCurrents($event)" />
             </label>
             <div class="row" style="margin-top: 10px">

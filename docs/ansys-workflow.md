@@ -19,6 +19,13 @@ Parameters* (`ID, Parameter Name, Value, Unit`); upload several such files at on
 it into the import page. If the current was ramped with the load-step time, set *Time → current factor*
 (e.g. 0.8 A/s when t = 1 s corresponds to 0.8 A).
 
+**Nodal fields per body.** For the layer-by-layer temperature profile and the contact checks
+(TCC_eff = q/ΔT, ECC_eff = J/ΔV at every leg contact) run [`tools/ansys/teglab_export_nodal.py`](../tools/ansys)
+in Mechanical, or the Workbench journal next to it for every system. It needs *File → Options → Export →
+Text File Export → Include Node Location = Yes* and writes one zip per system; upload it on
+**ANSYS pipeline → Nodal fields**. Exporting single results by hand works too (*Export → Export Text File*,
+one file per body, named `<body>__<quantity>.txt`).
+
 ## 2 · Name probes so that they map automatically
 
 | quantity | good parameter names |
@@ -39,7 +46,7 @@ sure the suggestion is.
 * linearity of U(I) under BC-TT,
 * sampling density around the maximum-power point (with suggested extra currents),
 * effective Seebeck coefficient U_oc/ΔT_TE vs the material,
-* implied internal resistance (α·ΔT_TE − U)/I vs the model with finite and with ideal contacts – flags
+* implied internal resistance (α·ΔT_TE − U)/I vs the model with finite and with ideal contacts - flags
   systems in which the contact conductances did not take effect,
 * hot-side passive resistance vs the same two model variants,
 * leg conductance K = Q_h/ΔT_TE vs the model.
@@ -53,4 +60,4 @@ sure the suggestion is.
    to your parameter IDs first. Run it via *File → Scripting → Run Script File…* (save the project before).
    The journal uses the standard Workbench calls (`Parameters.GetParameter`, `CreateDesignPoint`,
    `SetParameterExpression`); check it on your Workbench version.
-4. Solve, export the table again, import it – and compare the new FEM points with the model prediction.
+4. Solve, export the table again, import it - and compare the new FEM points with the model prediction.

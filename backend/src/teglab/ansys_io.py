@@ -473,12 +473,12 @@ def suggest(table: ParsedTable) -> ParsedTable:
                 if c.role == "t_avg":
                     c.role, c.confidence = "t_leg_hot", 0.4
                     table.notes.append(
-                        f"case {ci}: '{c.name}' assumed to be the hot leg-end temperature – please check"
+                        f"case {ci}: '{c.name}' assumed to be the hot leg-end temperature - please check"
                     )
                     break
     table.n_cases = n_cases
     stem = table.sources[0].rsplit("/", 1)[-1].rsplit(".", 1)[0] if table.sources else "Imported"
-    table.case_names = [stem] if n_cases == 1 else [f"{stem} – system {k + 1}" for k in range(n_cases)]
+    table.case_names = [stem] if n_cases == 1 else [f"{stem} - system {k + 1}" for k in range(n_cases)]
     table.suggested_meta = [_suggest_meta(table, ci) for ci in range(1, n_cases + 1)]
     return table
 
@@ -582,7 +582,7 @@ def build_cases(
                 order_idx = sorted(range(len(keep)), key=lambda k: sub[sort_key][k])
                 sub = {role: [vals[k] for k in order_idx] for role, vals in sub.items()}
             if not sub or not keep:
-                notes.append(f"{gname}: no usable rows – skipped")
+                notes.append(f"{gname}: no usable rows - skipped")
                 continue
             cases.append(Case(id=uuid.uuid4().hex[:12], name=gname, meta=meta.model_copy(), data=sub))
     return cases, notes

@@ -1,0 +1,141 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.files {
+  margin-top: 10px;
+}
+
+.chip-x {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  padding: 0 0 0 2px;
+  cursor: pointer;
+}
+
+.profile-row {
+  margin-top: 12px;
+  align-items: flex-end;
+}
+
+.sources {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.tall {
+  max-height: 420px;
+  overflow: auto;
+}
+
+.settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  margin-top: 12px;
+}
+
+.settings.top {
+  align-items: flex-start;
+}
+
+.settings .field,
+.settings app-num {
+  min-width: 150px;
+}
+
+.examples .row {
+  flex-wrap: nowrap;
+}
+
+.section-title {
+  margin-top: 16px;
+}
+
+.layers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.layers li {
+  display: grid;
+  grid-template-columns: 24px minmax(120px, 180px) minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.layers li.active {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+}
+
+.layer-n {
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.layer-bodies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.layer-tools {
+  display: flex;
+  gap: 2px;
+}
+
+@media (max-width: 700px) {
+  .layers li {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "n name name"
+      "n bodies bodies"
+      "n check tools";
+  }
+
+  .layer-n {
+    grid-area: n;
+  }
+
+  .layer-name {
+    grid-area: name;
+  }
+
+  .layer-bodies {
+    grid-area: bodies;
+  }
+
+  .layers .check {
+    grid-area: check;
+  }
+
+  .layer-tools {
+    grid-area: tools;
+  }
+}

@@ -148,7 +148,7 @@
       <div class="card-head">
         <div>
           <h2>3 · Cases</h2>
-          <p>Boundary condition and geometry of every case – used by the analysis checks and the model calibration.</p>
+          <p>Boundary condition and geometry of every case - used by the analysis checks and the model calibration.</p>
         </div>
         <button type="button" class="btn small" (click)="addCase()">+ case</button>
       </div>
@@ -168,8 +168,8 @@
               <label class="field">
                 <span class="field-label">Boundary condition</span>
                 <select (change)="setCaseBc(c.index, $event)">
-                  <option value="QT" [selected]="c.bc === 'QT'">QT – heat flow in</option>
-                  <option value="TT" [selected]="c.bc === 'TT'">TT – fixed temperatures</option>
+                  <option value="QT" [selected]="c.bc === 'QT'">QT - heat flow in</option>
+                  <option value="TT" [selected]="c.bc === 'TT'">TT - fixed temperatures</option>
                   <option value="other" [selected]="c.bc === 'other'">other / lab</option>
                 </select>
               </label>

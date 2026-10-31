@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from .geometry import a_hot_from_angle
 
-# Calibration of the 1D model against thesis A0-TT (Tables 4.2–4.4); produced by
+# Calibration of the 1D model against thesis A0-TT (Tables 4.2-4.4); produced by
 # ``teglab.calibration.calibrate`` on ``THESIS_A0_TT_POINTS`` (see docs/validation.md).
 CALIBRATED_A0: dict[str, float] = {
     "hot_side_factor": 1.479,

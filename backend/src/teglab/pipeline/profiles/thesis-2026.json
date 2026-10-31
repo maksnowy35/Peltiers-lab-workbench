@@ -1,0 +1,43 @@
+{
+  "name": "thesis-2026",
+  "description": "ANSYS Workbench project of the master's thesis: Steady-State Thermal-Electric systems A, B, C (variants A0, A5, A10, mesh C1) and D (A10 on the refined mesh C2), all linked to one Parameter Set. Exact output names are those shown in thesis Fig. 3.10; system titles are those of Fig. 3.9.",
+  "aliases": {
+    "voltage_v": ["Voltage Probe Electric Voltage"],
+    "q_cold_w": ["Reaction Probe 2 Heat"],
+    "t_leg_hot_c": ["Temperature Average"],
+    "t_leg_cold_c": ["T_leg_cold_avg Average"],
+    "t_max_c": ["T_max_global Maximum"],
+    "j_avg_a_m2": ["Total Current Density Average"],
+    "j_max_a_m2": ["Total Current Density Maximum"],
+    "joule_avg_w_m3": ["Joule Heat Average"],
+    "v_avg_v": ["Electric Voltage Average"]
+  },
+  "patterns": {
+    "current_a": ["^current( \\d+)? magnitude$"],
+    "q_hot_w": ["^reaction probe heat$", "^heat flow( \\d+)? magnitude$"],
+    "t_hot_face_c": ["^t_?hot_?face\\b", "\\bhot face\\b.*temperature"],
+    "t_cold_face_c": ["^t_?cold_?face\\b", "\\bcold face\\b.*temperature"],
+    "tcc_w_m2k": ["thermal conductance"],
+    "ecc_s_m2": ["electric(al)? conductance"]
+  },
+  "ignore": [],
+  "systems": [
+    {"match": "^dense mesh copy", "variant": "A10", "theta_deg": 10, "mesh": "C2"},
+    {"match": "\\b10\\s*st\\b", "variant": "A10", "theta_deg": 10, "mesh": "C1"},
+    {"match": "\\b5\\s*st\\b", "variant": "A5", "theta_deg": 5, "mesh": "C1"},
+    {"match": "^thermal-electric$", "variant": "A0", "theta_deg": 0, "mesh": "C1"}
+  ],
+  "default_condition": {"bc": "QT", "q_hot_w": 0.3152, "t_cold_face_c": 20.0},
+  "conditions": {},
+  "geometry": {"a_cold_mm": 1.4, "height_mm": 1.4, "gap_mm": 1.0, "t_cu_mm": 0.2, "t_ceramic_mm": 0.8, "c3d": 0.5},
+  "materials": {
+    "alpha_p_v_k": 2.0e-4,
+    "alpha_n_v_k": -2.0e-4,
+    "rho_te_ohm_m": 1.0e-5,
+    "kappa_te_w_mk": 1.5,
+    "rho_cu_ohm_m": 1.7e-8,
+    "temperature_dependent": false
+  },
+  "contacts": {"tcc_w_m2k": 1.0e5, "ecc_s_m2": 1.0e9},
+  "reference_variant": "A0"
+}

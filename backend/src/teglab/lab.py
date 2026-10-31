@@ -303,7 +303,7 @@ def plan_experiment(req: LabPlanRequest, lib: MaterialLibrary | None = None) -> 
     ]
     reflow_peak = solder["peak_c"][1]
     reflow_warnings = [
-        f"reflow peak {reflow_peak} °C exceeds the {x['material']} limit {x['limit_c']:.0f} °C – keep time above "
+        f"reflow peak {reflow_peak} °C exceeds the {x['material']} limit {x['limit_c']:.0f} °C - keep time above "
         f"liquidus short and use an inert atmosphere"
         for x in te_limits
         if reflow_peak > x["limit_c"]
@@ -496,7 +496,7 @@ def plan_experiment(req: LabPlanRequest, lib: MaterialLibrary | None = None) -> 
             "shunt_power_w": _r(shunt_std * i_max**2, 3),
             "voltmeter_resolution_v": _r(resolution, 2),
             "notes": [
-                "Lead and probe resistance is of the order of the pair resistance – "
+                "Lead and probe resistance is of the order of the pair resistance - "
                 "never measure U through the current leads.",
                 "Record U_oc at several ΔT (e.g. 20/40/60/80 K) before the load sweep to get α_eff.",
                 "Reverse the current polarity once to check thermal EMF offsets of the wiring.",
@@ -581,7 +581,7 @@ def run_sheet_markdown(plan: dict) -> str:
         else (f"Q_hot = {t['q_hot_w_per_pair']} W per pair, T_cold = {t['t_cold_c']} °C")
     )
     lines = [
-        f"# Run sheet – {plan['design_name']}",
+        f"# Run sheet - {plan['design_name']}",
         "",
         f"Test mode **{t['mode']}** ({cond}); {m['n_pairs']} pair(s) in series.",
         "",
@@ -603,7 +603,7 @@ def run_sheet_markdown(plan: dict) -> str:
         size = f"{leg['a_hot_mm']} → {leg['a_cold_mm']} mm × {leg['height_mm']} mm (θ = {leg['theta_deg']}°)"
         lines.append(
             f"- {leg['type']} legs: {leg['count']} + {leg['spares']} spare, {size}, material {leg['material_mass_g']} g"
-            + (" – **fragile: handle the narrow end with care**" if leg["fragile"] else "")
+            + (" - **fragile: handle the narrow end with care**" if leg["fragile"] else "")
         )
     b = plan["build"]
     ele, cer = b["electrodes"], b["ceramic"]
@@ -618,15 +618,15 @@ def run_sheet_markdown(plan: dict) -> str:
         "",
         "1. Clean legs (IPA), electroplate/sputter Ni on both end faces, protect side walls.",
         "2. Print paste through the stencil on the electrodes; place legs with a jig (P/N alternation!).",
-        f"3. Reflow: soak {s['reflow']['soak_c'][0]}–{s['reflow']['soak_c'][1]} °C, peak {s['reflow']['peak_c'][0]}–"
-        f"{s['reflow']['peak_c'][1]} °C, 45–90 s above liquidus, {s['reflow']['atmosphere']}.",
+        f"3. Reflow: soak {s['reflow']['soak_c'][0]}-{s['reflow']['soak_c'][1]} °C, peak {s['reflow']['peak_c'][0]}-"
+        f"{s['reflow']['peak_c'][1]} °C, 45-90 s above liquidus, {s['reflow']['atmosphere']}.",
         f"4. Inspect joints; measure 4-wire R at room temperature (expect ~{e['r_int_ohm'] * 1e3:.2f} mΩ per pair "
         "at the test temperature, slightly different at RT for T-dependent materials).",
         f"5. Mount between heater and cold plate, thermal paste on both faces, clamp {plan['clamping']['force_n']} N "
         f"({plan['clamping']['pressure_mpa']} MPa).",
         "",
         f"Joint temperature in test: {s['t_joint_max_c']} °C, margin to solidus {s['margin_to_solidus_k']} K "
-        + ("(OK)" if s["ok"] else "(**too small – choose another alloy**)"),
+        + ("(OK)" if s["ok"] else "(**too small - choose another alloy**)"),
     ]
     for w in s["warnings"]:
         lines.append(f"- warning: {w}")
@@ -636,7 +636,7 @@ def run_sheet_markdown(plan: dict) -> str:
         "",
         f"- Heater: ≥ {h['rated_power_w']} W at {h['supply_v']} V (~{h['resistance_ohm']} Ω, {h['current_a']} A), "
         f"block at ~{h['block_temperature_c']} °C. {h['control']}.",
-        f"- Cooling: {plan['cooling'].get('medium')} – reject {plan['cooling']['q_reject_w']} W"
+        f"- Cooling: {plan['cooling'].get('medium')} - reject {plan['cooling']['q_reject_w']} W"
         + (
             f", {plan['cooling']['flow_ml_min']} mL/min for ΔT = {plan['cooling']['coolant_dt_k']} K"
             if plan["cooling"].get("flow_ml_min")

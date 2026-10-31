@@ -8,7 +8,7 @@ on:
 jobs:
   backend:
     name: Backend tests (Python ${{ matrix.python }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -21,19 +21,22 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
-      - name: Install
-        run: python -m pip install -e ".[dev]"
-      - name: Lint
+      - name: Install (pinned versions of backend/constraints.txt)
+        run: python -m pip install -e ".[dev]" -c constraints.txt
+      - name: Lint (backend, e2e tests, ANSYS tools - each with its own ruff config)
         if: matrix.python == '3.12'
         run: |
-          ruff check .
-          ruff format --check .
-      - name: Test (incl. validation against the thesis tables)
+          ruff check ..
+          ruff format --check ..
+      - name: Test (incl. validation against the thesis tables and the ANSYS export script)
         run: python -m pytest
+      - name: API contract - TypeScript mirror up to date
+        if: matrix.python == '3.12'
+        run: python scripts/gen_ts_types.py --check
 
   frontend:
     name: Frontend build (Angular)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: frontend
@@ -42,17 +45,38 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: "24"
-      # switch to `npm ci` once package-lock.json is committed
-      - name: Install
-        run: npm install --no-audit --no-fund
+      - name: Install (npm ci once package-lock.json is committed)
+        run: if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
       - name: Production build (strict template type-checking)
         run: npm run build
 
   docker:
-    name: Docker image
-    runs-on: ubuntu-latest
+    name: Docker compose (build, health, smoke test)
+    runs-on: ubuntu-24.04
     needs: [backend, frontend]
     steps:
       - uses: actions/checkout@v7
-      - name: Build
-        run: docker build -t teglab:ci .
+      - name: Build and start
+        run: docker compose up -d --build --wait --wait-timeout 180
+      - name: Smoke test (UI, REST API, nodal pipeline)
+        run: |
+          curl -fsS http://localhost:8000/api/health
+          curl -fsS http://localhost:8000/ | grep -q "<app-root"
+          curl -fsS http://localhost:8000/api/pipeline/examples | grep -q "synthetic-cell_bonded.zip"
+          curl -fsS -X POST "http://localhost:8000/api/pipeline/nodal/demo?contacts=bonded" | grep -q '"proposed_stack"'
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: End-to-end browser tests (Playwright against the container)
+        env:
+          TEGLAB_URL: http://localhost:8000
+        run: |
+          python -m pip install -r e2e/requirements.txt
+          python -m playwright install --with-deps chromium
+          python -m pytest e2e
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs
+      - name: Stop
+        if: always()
+        run: docker compose down -v

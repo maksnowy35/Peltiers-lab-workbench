@@ -1,0 +1,12 @@
+{
+  // VS Code asks to install these when the folder is opened.
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.debugpy",
+    "charliermarsh.ruff",
+    "angular.ng-template",
+    "editorconfig.editorconfig",
+    "ms-azuretools.vscode-containers",
+    "github.vscode-github-actions"
+  ]
+}

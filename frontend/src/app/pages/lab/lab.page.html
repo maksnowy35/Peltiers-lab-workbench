@@ -16,7 +16,7 @@
       @let f = form();
       <p class="section-title">Build</p>
       <div class="fields">
-        <app-num label="P–N pairs in series" step="1" [value]="f.n_pairs" (valueChange)="set('n_pairs', $event)" />
+        <app-num label="P-N pairs in series" step="1" [value]="f.n_pairs" (valueChange)="set('n_pairs', $event)" />
         <app-num label="Spare legs" unit="×" step="0.05" [value]="f.spare_fraction" (valueChange)="set('spare_fraction', $event)" />
         <label class="field">
           <span class="field-label">Solder</span>
@@ -193,9 +193,9 @@
             </div>
             <table class="data">
               <tbody>
-                <tr><td>Soak</td><td>{{ p.solder.reflow.soak_c[0] }}–{{ p.solder.reflow.soak_c[1] }} °C</td></tr>
-                <tr><td>Peak</td><td>{{ p.solder.reflow.peak_c[0] }}–{{ p.solder.reflow.peak_c[1] }} °C</td></tr>
-                <tr><td>Time above liquidus</td><td>{{ p.solder.reflow.time_above_liquidus_s[0] }}–{{ p.solder.reflow.time_above_liquidus_s[1] }} s</td></tr>
+                <tr><td>Soak</td><td>{{ p.solder.reflow.soak_c[0] }}-{{ p.solder.reflow.soak_c[1] }} °C</td></tr>
+                <tr><td>Peak</td><td>{{ p.solder.reflow.peak_c[0] }}-{{ p.solder.reflow.peak_c[1] }} °C</td></tr>
+                <tr><td>Time above liquidus</td><td>{{ p.solder.reflow.time_above_liquidus_s[0] }}-{{ p.solder.reflow.time_above_liquidus_s[1] }} s</td></tr>
                 <tr><td>Atmosphere</td><td>{{ p.solder.reflow.atmosphere }}</td></tr>
                 <tr><td>Homologous temperature in test</td><td>{{ p.solder.homologous_temperature }}</td></tr>
               </tbody>
@@ -267,7 +267,7 @@
           <div class="card">
             <div class="card-head"><h2>Electrical measurement</h2></div>
             <p class="small">{{ p.electrical.method }}</p>
-            <p class="section-title" style="margin-top: 10px">Current set-points [A] – dense around I<sub>opt</sub></p>
+            <p class="section-title" style="margin-top: 10px">Current set-points [A] - dense around I<sub>opt</sub></p>
             <div class="row">
               @for (i of p.electrical.current_setpoints_a; track $index) {
                 <span class="chip num">{{ i }}</span>
@@ -299,7 +299,7 @@
               </thead>
               <tbody>
                 @for (t of p.thermocouples; track t.position) {
-                  <tr><td>{{ t.position }}</td><td>{{ t.type }}</td><td>{{ t.count }}</td><td>{{ t.expected_c !== undefined ? (t.expected_c | n: 4) + ' °C' : '–' }}</td></tr>
+                  <tr><td>{{ t.position }}</td><td>{{ t.type }}</td><td>{{ t.count }}</td><td>{{ t.expected_c !== undefined ? (t.expected_c | n: 4) + ' °C' : '-' }}</td></tr>
                 }
               </tbody>
             </table>

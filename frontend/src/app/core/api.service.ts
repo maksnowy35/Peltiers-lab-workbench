@@ -226,7 +226,7 @@ export function describeError(err: unknown): string {
       return detail.map((d: { msg?: string; loc?: unknown[] }) => `${(d.loc ?? []).join('.')}: ${d.msg ?? ''}`).join('; ');
     }
     if (err.status === 0) {
-      return 'Backend not reachable – start it with "python -m teglab" (port 8000).';
+      return 'Backend not reachable - start it with "python -m teglab" (port 8000).';
     }
     return `${err.status} ${err.statusText}`;
   }

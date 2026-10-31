@@ -8,3 +8,5 @@
 backend/data
 .git
 docs/img
+tools
+**/*.zip

@@ -30,9 +30,10 @@ export class HomePage {
 
   protected readonly steps = [
     { path: '/import', n: '1', title: 'Import ANSYS results', text: 'Workbench design-point tables, parameter outlines, Mechanical tabular data or lab CSV/XLSX. Repeated outputs of several systems are split into cases automatically.' },
+    { path: '/pipeline', n: 'P', title: 'ANSYS pipeline', text: 'Raw Workbench exports through a project profile: R_int split, P_max, variant attribution. Nodal fields per body with contact checks (TCC_eff, ECC_eff) and contour-picture overlays.' },
     { path: '/analysis', n: '2', title: 'Analyze load curves', text: 'U(I), P(I), efficiency, heat balance, fitted optimum, variant comparison (Table 5.3 style) and automatic consistency checks, incl. contact resistance.' },
     { path: '/model', n: '3', title: 'Calibrate the 1D model', text: 'Fast thermoelectric model with Peltier, Joule and Thomson terms, contacts and ceramics. Fit its lumped parameters to your ANSYS points.' },
-    { path: '/optimizer', n: '4', title: 'Optimize geometry', text: 'Taper angle and height at fixed base or constant volume, under fixed heat flow, fixed temperatures or real heat exchangers – with manufacturing and temperature limits.' },
+    { path: '/optimizer', n: '4', title: 'Optimize geometry', text: 'Taper angle and height at fixed base or constant volume, under fixed heat flow, fixed temperatures or real heat exchangers - with manufacturing and temperature limits.' },
     { path: '/materials', n: '5', title: 'High-temperature materials', text: 'zT and compatibility curves, efficiency vs hot-side temperature, segmented legs and the Thomson contribution. Upload your own material data.' },
     { path: '/lab', n: '6', title: 'Plan the experiment', text: 'Leg count and material mass, solder paste and reflow, heater and cooling, current set-points, uncertainty budget and a printable run sheet.' },
   ];

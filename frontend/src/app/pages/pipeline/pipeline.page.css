@@ -1,0 +1,14 @@
+.tabs button {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.center {
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.empty .notice {
+  margin-top: 12px;
+  text-align: left;
+}

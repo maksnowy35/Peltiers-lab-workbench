@@ -12,6 +12,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/import/import.page').then((m) => m.ImportPage),
   },
   {
+    path: 'pipeline',
+    title: 'ANSYS pipeline · teglab',
+    loadComponent: () => import('./pages/pipeline/pipeline.page').then((m) => m.PipelinePage),
+  },
+  {
     path: 'analysis',
     title: 'Analysis · teglab',
     loadComponent: () => import('./pages/analysis/analysis.page').then((m) => m.AnalysisPage),

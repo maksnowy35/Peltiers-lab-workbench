@@ -3,7 +3,7 @@ import { Pipe, PipeTransform } from '@angular/core';
 /** Format a number with `digits` significant digits after multiplying by `scale`. */
 export function sig(value: number | null | undefined, digits = 4, scale = 1): string {
   if (value === null || value === undefined || !Number.isFinite(value)) {
-    return '–';
+    return '-';
   }
   const v = value * scale;
   if (v === 0) {
@@ -20,7 +20,7 @@ export function sig(value: number | null | undefined, digits = 4, scale = 1): st
 /** Signed percentage, e.g. +12.3 % */
 export function pct(value: number | null | undefined, digits = 1, signed = false): string {
   if (value === null || value === undefined || !Number.isFinite(value)) {
-    return '–';
+    return '-';
   }
   const s = (value * 100).toFixed(digits);
   return signed && value > 0 ? `+${s} %` : `${s} %`;

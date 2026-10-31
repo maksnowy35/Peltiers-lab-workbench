@@ -1,0 +1,112 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.ov {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ov-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 14px;
+}
+
+.ov-controls .field {
+  min-width: 150px;
+}
+
+.slider input {
+  width: 150px;
+  padding: 0;
+}
+
+.upload {
+  position: relative;
+  overflow: hidden;
+}
+
+.upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.cal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.cal-img {
+  position: relative;
+  max-width: 760px;
+}
+
+.cal-img img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: crosshair;
+}
+
+.pick {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 0 0 2px var(--surface);
+  pointer-events: none;
+}
+
+.plot-wrap {
+  position: relative;
+}
+
+.ov-plot {
+  height: 540px;
+}
+
+.plot-wrap .empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+@media (max-width: 600px) {
+  .ov-plot {
+    height: auto;
+    aspect-ratio: 1 / 1.15;
+  }
+
+  .ov-controls .field {
+    min-width: 0;
+    flex: 1 1 140px;
+  }
+}

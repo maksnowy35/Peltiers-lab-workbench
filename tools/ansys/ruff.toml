@@ -1,0 +1,10 @@
+# teglab_export_nodal.py runs in Mechanical's IronPython 2.7: errors only, no pyupgrade-style rewrites
+# (an f-string or keyword-only argument would break it inside ANSYS). Tests check ASCII and no f-strings.
+line-length = 120
+target-version = "py37"
+
+[lint]
+select = ["E", "F"]
+
+[format]
+quote-style = "double"

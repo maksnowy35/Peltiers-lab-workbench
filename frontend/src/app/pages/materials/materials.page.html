@@ -4,7 +4,7 @@
       <h1>Materials</h1>
       <p>
         Temperature-dependent α(T), ρ(T), κ(T) for near-room-temperature and high-temperature thermoelectrics. The
-        built-in curves are <strong>representative</strong> values for each material class – good for screening and
+        built-in curves are <strong>representative</strong> values for each material class - good for screening and
         for learning the trends; upload measured data before drawing conclusions.
       </p>
     </div>
@@ -18,7 +18,7 @@
     <div class="card-head">
       <div>
         <h2>Library</h2>
-        <p>Select up to 6 materials for the property charts – the color keys here are the legend of the charts below. The limit is the recommended maximum operating temperature.</p>
+        <p>Select up to 6 materials for the property charts - the color keys here are the legend of the charts below. The limit is the recommended maximum operating temperature.</p>
       </div>
     </div>
     <div class="table-wrap">
@@ -51,7 +51,7 @@
               </td>
               <td class="left">{{ m.kind === 'p' ? 'p-type' : 'n-type' }}</td>
               <td class="left">{{ m.family }}</td>
-              <td>{{ m.constant ? 'constant' : (m.t_min_c | n: 3) + ' – ' + (m.t_max_c | n: 3) }}</td>
+              <td>{{ m.constant ? 'constant' : (m.t_min_c | n: 3) + ' - ' + (m.t_max_c | n: 3) }}</td>
               <td>{{ m.t_limit_c | n: 3 }}</td>
               <td>{{ m.zt_peak | n: 2 }}</td>
               <td>{{ m.density_g_cm3 }}</td>
@@ -208,7 +208,7 @@
         <div>
           <h2>Thomson contribution (active design)</h2>
           <p>
-            Full α(T) versus α frozen at its mean over each leg's temperature range – same open-circuit voltage, no
+            Full α(T) versus α frozen at its mean over each leg's temperature range - same open-circuit voltage, no
             distributed Thomson heat. With the constant thesis properties both are identical (τ = 0).
           </p>
         </div>

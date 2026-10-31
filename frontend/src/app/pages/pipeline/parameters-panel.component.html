@@ -1,0 +1,286 @@
+<div class="grid cols-2">
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2>Workbench exports</h2>
+        <p>
+          <em>Outline of All Parameters</em> (copied to CSV/XLSX) or the <em>Table of Design Points</em> CSV. Files are
+          combined; systems are recognized from their titles and mapped through the project profile.
+        </p>
+      </div>
+    </div>
+    <label class="drop" [class.over]="dragging()" (dragover)="onDragOver($event)" (dragleave)="dragging.set(false)"
+           (drop)="onDrop($event)">
+      <input type="file" multiple accept=".csv,.txt,.xlsx,.xlsm" (change)="onFiles($event)" />
+      <strong>Drop exports here or click to choose</strong>
+      <span class="muted small">.csv .txt .xlsx · the exact parameter names stay as ANSYS wrote them</span>
+    </label>
+    @if (state.paramFiles().length) {
+      <div class="row files">
+        @for (f of state.paramFiles(); track f.name) {
+          <span class="chip">
+            {{ f.name }} · {{ f.size / 1024 | n: 3 }} kB
+            <button type="button" class="chip-x" (click)="removeFile(f.name)" [attr.aria-label]="'Remove ' + f.name">×</button>
+          </span>
+        }
+      </div>
+    }
+    <div class="row profile-row">
+      <label class="field">
+        <span class="field-label">Project profile</span>
+        <select (change)="setProfile($event)">
+          @for (p of state.profiles(); track p) {
+            <option [value]="p" [selected]="p === state.profileName()">{{ p }}</option>
+          }
+        </select>
+      </label>
+      @if (state.profile(); as prof) {
+        <span class="muted small">{{ prof.description }}</span>
+      }
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2>Examples</h2>
+        <p>Reconstructed from numbers printed in the thesis - not ANSYS exports.</p>
+      </div>
+    </div>
+    <ul class="examples">
+      @for (e of examples(); track e.name) {
+        <li>
+          <div>
+            <strong>{{ e.title }}</strong>
+            <p class="muted small">{{ e.description }}</p>
+          </div>
+          <div class="row">
+            <a class="btn ghost small" [href]="api.exampleUrl(e.name)" [attr.download]="e.name">Download</a>
+            <button type="button" class="btn small" [disabled]="state.paramBusy()" (click)="state.addExample(e)">Add</button>
+          </div>
+        </li>
+      }
+    </ul>
+  </div>
+</div>
+
+@if (state.paramError()) {
+  <div class="notice error" role="alert">{{ state.paramError() }}</div>
+}
+
+@if (state.inspection(); as ins) {
+  <div class="card" [class.busy]="state.paramBusy()">
+    <div class="card-head">
+      <div>
+        <h2>Recognized parameters</h2>
+        <p>{{ ins.parameters.length }} parameters in {{ ins.sources.length }} files · {{ unresolved().length }} unresolved names</p>
+      </div>
+    </div>
+    <div class="sources">
+      @for (s of ins.sources; track s.source) {
+        <div class="source">
+          <strong class="mono small">{{ s.source }}</strong>
+          <span class="chip">{{ s.format }}</span>
+          <span class="muted small">confidence {{ s.confidence | pct: 0 }} · {{ s.n_rows }} rows</span>
+          @for (sys of s.systems; track sys.letter) {
+            <span class="chip">{{ sys.letter }} · {{ sys.title }}</span>
+          }
+        </div>
+      }
+    </div>
+    <div class="table-wrap tall">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th class="left">System</th>
+            <th class="left">Workbench name</th>
+            <th class="left">Unit</th>
+            <th class="left">Canonical key</th>
+            <th class="left">Matched by</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of ins.parameters; track $index) {
+            <tr [class.highlight]="p.rule === 'unresolved'">
+              <td class="mono">{{ p.pid }}</td>
+              <td class="left">{{ p.system ?? '-' }}</td>
+              <td class="left">{{ p.name }}</td>
+              <td class="left mono">{{ p.unit ?? '' }}</td>
+              <td class="left mono">{{ p.key ?? '-' }}</td>
+              <td class="left">{{ p.rule }}@if (p.rule !== 'unresolved' && p.rule !== 'ignored') { ({{ p.confidence | n: 2 }}) }</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (unresolved().length) {
+      <div class="notice warn">
+        <div>
+          <strong>Unresolved names are ignored.</strong>
+          <p class="small">Map them in the profile to use them: <code>{{ aliasHint() }}</code></p>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2>Run settings</h2>
+        <p>Boundary condition, the geometric variant of every system and the reference of the comparison.</p>
+      </div>
+      <button type="button" class="btn primary" [disabled]="state.paramBusy() || !state.paramFiles().length" (click)="state.run()">
+        Run pipeline
+      </button>
+    </div>
+    <div class="settings top">
+      <div class="field">
+        <span class="field-label">Boundary condition</span>
+        <div class="seg" role="group" aria-label="Boundary condition">
+          <button type="button" [class.on]="state.condition().mode === 'profile'" (click)="setMode('profile')">From profile</button>
+          <button type="button" [class.on]="state.condition().mode === 'QT'" (click)="setMode('QT')">BC-QT</button>
+          <button type="button" [class.on]="state.condition().mode === 'TT'" (click)="setMode('TT')">BC-TT</button>
+        </div>
+      </div>
+      @if (state.condition().mode === 'TT') {
+        <app-num label="Hot face T_h" unit="°C" [value]="state.condition().tHotC" (valueChange)="setCondition('tHotC', $event)" />
+      }
+      @if (state.condition().mode === 'QT') {
+        <app-num label="Heat input Q_h" unit="W" [value]="state.condition().qHotW" (valueChange)="setCondition('qHotW', $event)" />
+      }
+      @if (state.condition().mode !== 'profile') {
+        <app-num label="Cold face T_c" unit="°C" [value]="state.condition().tColdC" (valueChange)="setCondition('tColdC', $event)" />
+      }
+      <app-num label="Current" unit="A" hint="only for single-point outline exports" [value]="state.condition().currentA"
+               (valueChange)="setCondition('currentA', $event)" />
+      @if (state.condition().currentA !== null) {
+        <button type="button" class="btn ghost small clear-current" (click)="clearCurrent()">clear current</button>
+      }
+    </div>
+    @if (state.systems().length) {
+      <h3 class="section-title">Variants</h3>
+      <div class="fields">
+        @for (s of state.systems(); track s.letter) {
+          <label class="field">
+            <span class="field-label">{{ s.letter }}{{ s.title ? ' · ' + s.title : '' }}</span>
+            <select (change)="setVariant(s.letter, $event)">
+              <option value="" [selected]="!state.variants()[s.letter]">from the title</option>
+              @for (v of state.variantOptions(); track v) {
+                <option [value]="v" [selected]="state.variants()[s.letter] === v">{{ v }}</option>
+              }
+            </select>
+          </label>
+        }
+        <label class="field">
+          <span class="field-label">Reference variant</span>
+          <select (change)="setReference($event)">
+            <option value="" [selected]="!state.reference()">profile ({{ state.profile()?.reference_variant ?? 'A0' }})</option>
+            @for (v of state.variantOptions(); track v) {
+              <option [value]="v" [selected]="state.reference() === v">{{ v }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    }
+  </div>
+}
+
+@if (state.report(); as rep) {
+  <div class="card" [class.busy]="state.paramBusy()">
+    <div class="card-head">
+      <div>
+        <h2>Systems</h2>
+        <p>Open circuit from the lowest current, R split into ohmic and thermal-feedback parts, P_max from the data.</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>System</th>
+            <th class="left">Variant · BC</th>
+            <th>U_oc [mV]</th>
+            <th>ΔT_TE [K]</th>
+            <th>K [mW/K]</th>
+            <th>R ohmic [mΩ]</th>
+            <th>Contacts: isolated / expected [mΩ]</th>
+            <th class="left">Contacts</th>
+            <th>P_max [mW]</th>
+            <th>Exact BC-QT [mW]</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of rep.systems; track s.system) {
+            <tr>
+              <td>
+                <strong>{{ s.system }}</strong>
+                @if (s.title) {
+                  <span class="muted small"> {{ s.title }}</span>
+                }
+              </td>
+              <td class="left">{{ s.variant ?? '?' }} · {{ s.bc ? 'BC-' + s.bc : '?' }}</td>
+              <td>{{ s.open_circuit.u_oc_v | n: 4 : 1000 }}</td>
+              <td>{{ s.open_circuit.dt_te_k | n: 4 }}</td>
+              <td>{{ s.open_circuit.k_te_w_k | n: 4 : 1000 }}</td>
+              <td>{{ s.resistance.ohmic_ohm | n: 4 : 1000 }}</td>
+              <td>{{ s.resistance.contacts_isolated_ohm | n: 3 : 1000 }} / {{ s.resistance.contacts_expected_ohm | n: 3 : 1000 }}</td>
+              <td class="left">
+                <span [class]="'badge ' + contactBadge(s).kind">
+                  <span class="ico" aria-hidden="true">{{ contactBadge(s).icon }}</span>{{ contactBadge(s).text }}
+                </span>
+              </td>
+              <td [title]="s.max_power.method">{{ s.max_power.p_max_w | n: 4 : 1000 }}</td>
+              <td>{{ s.analytic.exact_w | n: 4 : 1000 }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid cols-2">
+    <div class="card">
+      <app-plot title="Contact resistance" subtitle="What the load points leave for the contacts vs 2/(ECC·A_h) + 2/(ECC·A_c)"
+                [traces]="contactTraces()" [yScale]="1000" yTitle="R contacts [mΩ]" xTitle="system · variant"
+                hoverMode="closest" barMode="group" [yZero]="true" [height]="300" />
+    </div>
+    @if (rep.comparison.length) {
+      <div class="card">
+        <app-plot [title]="'Variants relative to ' + referenceName()"
+                  subtitle="Ratios of conductance K, resistance R and the power references (1 = reference)"
+                  [traces]="comparisonTraces()" [shapes]="unityLine()" yTitle="ratio to the reference" xTitle="variant (system)"
+                  hoverMode="closest" barMode="group" [yZero]="true" [height]="300" />
+      </div>
+    }
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2>Findings</h2>
+        <p>{{ issues().length - infoCount() }} warnings and errors · {{ infoCount() }} notes</p>
+      </div>
+      @if (infoCount()) {
+        <button type="button" class="btn ghost small" (click)="showInfo.set(!showInfo())" [attr.aria-pressed]="showInfo()">
+          {{ showInfo() ? 'Hide notes' : 'Show notes' }}
+        </button>
+      }
+    </div>
+    <ul class="issues">
+      @for (row of shownIssues(); track $index) {
+        <li>
+          <span [class]="'badge ' + levelBadge(row.issue.level).kind">
+            <span class="ico" aria-hidden="true">{{ levelBadge(row.issue.level).icon }}</span>{{ levelBadge(row.issue.level).text }}
+          </span>
+          <div>
+            <strong class="small">{{ row.where }}</strong>
+            <p class="small">{{ row.issue.message }}</p>
+          </div>
+        </li>
+      } @empty {
+        <li class="muted small">No warnings.</li>
+      }
+    </ul>
+  </div>
+}

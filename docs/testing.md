@@ -6,7 +6,7 @@ ANSYS data can do.
 | Layer | Command | Count / time | Runs in CI |
 | --- | --- | --- | --- |
 | 1 · Static checks | `./dev.sh lint`, `./dev.sh contract --check`, `./dev.sh build` | 66 Python files, strict Angular build | yes |
-| 2 · Backend tests | `./dev.sh test` | 147 tests, ~15 s | yes, Python 3.11-3.13 |
+| 2 · Backend tests | `./dev.sh test` | 155 tests, ~15 s | yes, Python 3.11-3.13 |
 | 3 · Browser tests | `./dev.sh e2e` (app running) | 12 tests, ~40 s | yes, against the container |
 | 4 · Container | `./dev.sh docker` | health check + smoke test | yes |
 | 5 · Manual acceptance | checklist below | ~15 min | - |

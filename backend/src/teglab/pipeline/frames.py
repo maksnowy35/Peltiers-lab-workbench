@@ -166,6 +166,7 @@ def system_table(
     profile: ProjectProfile,
     conditions: Mapping[str, CaseCondition] | None = None,
     variants: Mapping[str, str] | None = None,
+    meshes: Mapping[str, str] | None = None,
 ) -> pd.DataFrame:
     """One row per analysis system with its variant, taper angle, mesh and imposed boundary condition."""
     titles = {r.letter: r.title for r in refs}
@@ -186,7 +187,7 @@ def system_table(
                 "title": title,
                 "variant": variant,
                 "theta_deg": theta,
-                "mesh": rule.mesh if rule else None,
+                "mesh": (meshes or {}).get(letter) or (rule.mesh if rule else None),
                 "bc": cond.bc.value if cond else None,
                 "imposed_t_hot_face_c": cond.t_hot_face_c if cond else None,
                 "imposed_q_hot_w": cond.q_hot_w if cond else None,
@@ -278,6 +279,7 @@ def build_canonical(
     profile: ProjectProfile,
     conditions: Mapping[str, CaseCondition] | None = None,
     variants: Mapping[str, str] | None = None,
+    meshes: Mapping[str, str] | None = None,
 ) -> CanonicalData:
     """Merge any number of outline / design-point tables into the canonical wide frame."""
     issues: list[Issue] = []
@@ -298,7 +300,7 @@ def build_canonical(
         longs.append(_to_canonical_long(raw, catalog, t.source))
 
     letters = sorted({r.system for r in catalog_all if r.system} | set(known)) or ["A"]
-    systems = system_table(list(known.values()), letters, profile, conditions, variants)
+    systems = system_table(list(known.values()), letters, profile, conditions, variants, meshes)
     if not longs:
         issues.append(Issue(level=Level.ERROR, code="no-data", message="no parameter could be mapped"))
         return CanonicalData(pd.DataFrame(), systems, catalog_all, issues)

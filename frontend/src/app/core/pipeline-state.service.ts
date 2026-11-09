@@ -46,6 +46,9 @@ export class PipelineStateService {
   readonly report = signal<PipelineReport | null>(null);
   readonly condition = signal<ConditionDraft>({ mode: 'profile', tHotC: 100, qHotW: 0.3152, tColdC: 20, currentA: null });
   readonly variants = signal<Record<string, string>>({});
+  readonly meshes = signal<Record<string, string>>({});
+  /** Fit the passive factors of the 1D twin on the reference variant and validate on the other systems. */
+  readonly calibrate = signal(false);
   readonly reference = signal('');
   readonly paramBusy = signal(false);
   readonly paramError = signal<string | null>(null);
@@ -76,6 +79,9 @@ export class PipelineStateService {
     return [...names].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
   });
 
+  /** Mesh labels declared in the profile (sizes for the GCI). */
+  readonly meshOptions = computed<string[]>(() => Object.keys(this.profile()?.meshes ?? {}).sort());
+
   readonly runSettings = computed<RunSettings>(() => {
     const c = this.condition();
     const base = this.profile()?.default_condition ?? null;
@@ -88,11 +94,14 @@ export class PipelineStateService {
       condition = { ...base, current_a: c.currentA };
     }
     const variants = Object.fromEntries(Object.entries(this.variants()).filter(([, v]) => v !== ''));
+    const meshes = Object.fromEntries(Object.entries(this.meshes()).filter(([, v]) => v !== ''));
     return {
       profile: this.profileName(),
       default_condition: condition,
       variants,
+      meshes,
       reference_variant: this.reference() || null,
+      calibration: this.calibrate() ? { systems: [] } : null,
     };
   });
 
@@ -125,6 +134,7 @@ export class PipelineStateService {
     this.paramFiles.set(files);
     this.report.set(null);
     this.variants.set({});
+    this.meshes.set({});
     if (files.length) {
       await this.inspect();
     } else {

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "teglab"
-version = "0.3.0"
+version = "0.4.0"
 description = "Thermoelectric (Peltier/TEG) pair analysis: ANSYS import, 1D model calibration, geometry & material optimization, lab planning"
 readme = "README.md"
 requires-python = ">=3.11"

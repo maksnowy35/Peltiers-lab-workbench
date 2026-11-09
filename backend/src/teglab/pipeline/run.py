@@ -16,7 +16,9 @@ from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 
+from .calibrate import calibrate_twin
 from .compare import cold_side_signature, compare_variants, pick_reference
+from .convergence import grid_convergence
 from .extract import (
     LINEAR_R2,
     geometry_table,
@@ -32,6 +34,7 @@ from .qa import qa_gates
 from .readers import NodalTable, RawTable, read_source
 from .schemas import (
     AnalyticPower,
+    CalibrationSettings,
     CaseCondition,
     Issue,
     Level,
@@ -45,6 +48,7 @@ from .schemas import (
     SourceSummary,
     SystemReport,
     ThermalSplit,
+    TwinProfile,
 )
 from .twin import twin_system
 
@@ -59,7 +63,9 @@ class RunOptions:
     default_condition: CaseCondition | None = None  # overrides the profile default for every system
     conditions: Mapping[str, CaseCondition] = field(default_factory=dict)  # per system letter
     variants: Mapping[str, str] = field(default_factory=dict)  # system letter -> variant, e.g. {"B": "A5"}
+    meshes: Mapping[str, str] = field(default_factory=dict)  # system letter -> mesh label, e.g. {"C": "C1"}
     reference_variant: str | None = None
+    calibration: CalibrationSettings | None = None  # fit the twin factors before the twins are run
 
 
 @dataclass
@@ -227,14 +233,18 @@ def _system_issues(letter: str, r: pd.Series, profile: ProjectProfile) -> list[I
 
 
 def _system_report(
-    letter: str, r: pd.Series, profile: ProjectProfile, frame: pd.DataFrame | None = None
+    letter: str,
+    r: pd.Series,
+    profile: ProjectProfile,
+    frame: pd.DataFrame | None = None,
+    twin_settings: TwinProfile | None = None,
 ) -> SystemReport:
     points = (
         frame.xs(letter, level="system")
         if frame is not None and letter in frame.index.get_level_values("system")
         else None
     )
-    twin = twin_system(r, points, profile)
+    twin = twin_system(r, points, profile, twin_settings, calibrated=twin_settings is not None)
     return SystemReport(
         system=letter,
         title=str(r.get("title") or ""),
@@ -313,14 +323,23 @@ def run_pipeline(files: Sequence[tuple[str, bytes]], options: RunOptions) -> Pip
             report.issues.append(Issue(level=Level.ERROR, code="no-tables", message="no parameter table was read"))
         return PipelineResult(report, nodal=nodal)
 
-    canonical = build_canonical(tables, profile, options.conditions, options.variants)
+    canonical = build_canonical(tables, profile, options.conditions, options.variants, options.meshes)
     report.parameters = canonical.catalog
     report.issues.extend(canonical.issues)
     if canonical.frame.empty:
         return PipelineResult(report, canonical, nodal=nodal)
 
     summary = summarize(canonical.frame, canonical.systems, profile)
-    report.systems = [_system_report(str(letter), row, profile, canonical.frame) for letter, row in summary.iterrows()]
+    twin_settings = None
+    if options.calibration is not None:
+        ref = options.reference_variant or profile.reference_variant
+        report.calibration, fitted, notes = calibrate_twin(canonical.frame, summary, profile, options.calibration, ref)
+        report.issues.extend(Issue(level=Level.WARNING, code="calibration", message=n) for n in notes)
+        twin_settings = fitted if report.calibration is not None else None
+    report.systems = [
+        _system_report(str(letter), row, profile, canonical.frame, twin_settings) for letter, row in summary.iterrows()
+    ]
+    report.convergence = grid_convergence(canonical.frame, summary, profile)
     reference = pick_reference(summary, options.reference_variant or profile.reference_variant)
     if reference is not None and summary["variant"].notna().sum() > 1:
         report.comparison = compare_variants(summary, reference)

@@ -32,15 +32,18 @@ __all__ = [
     "Axis",
     "BodyInfo",
     "BoundaryCondition",
+    "CalibrationSettings",
     "CaseCondition",
     "ContactCheck",
     "ContactProfile",
     "ContactVerdict",
+    "ConvergenceStatus",
     "DatasetImage",
     "DeleteResult",
     "Direction",
     "ExampleInfo",
     "GeometryProfile",
+    "GridConvergence",
     "ImageCalibration",
     "ImageSpec",
     "Issue",
@@ -51,6 +54,7 @@ __all__ = [
     "Level",
     "MaterialProfile",
     "MaxPowerFit",
+    "MeshLevel",
     "NodalDatasetInfo",
     "NodalFileInfo",
     "NodalFileSpec",
@@ -75,6 +79,7 @@ __all__ = [
     "SystemReport",
     "SystemRule",
     "ThermalSplit",
+    "TwinCalibration",
     "TwinMetric",
     "TwinPoint",
     "TwinProfile",
@@ -220,6 +225,13 @@ class ContactProfile(_Frozen):
     ecc_s_m2: float = Field(1.0e9, gt=0)
 
 
+class MeshLevel(_Frozen):
+    """Size of one mesh of the project; r between two meshes comes from node counts if both have them."""
+
+    element_size_mm: float = Field(gt=0, description="Representative element size in the legs")
+    nodes: int | None = Field(None, gt=0, description="Node count of the whole model (optional)")
+
+
 class TwinProfile(_Frozen):
     """Settings of the 1D twin that is run for every system (``twin.py``).
 
@@ -279,6 +291,7 @@ class ProjectProfile(_Frozen):
     materials: MaterialProfile = MaterialProfile()
     contacts: ContactProfile = ContactProfile()
     twin: TwinProfile = TwinProfile()
+    meshes: dict[str, MeshLevel] = Field({}, description="Mesh label (from the system rules) → size, for the GCI")
     reference_variant: str = "A0"
 
     @field_validator("patterns")
@@ -569,12 +582,68 @@ class VariantComparison(BaseModel):
     attribution: dict[str, float] = Field({}, description="Multiplicative factors of the frozen BC-QT gain")
 
 
+ConvergenceStatus = Literal["converged", "check", "not-converged", "oscillatory", "identical"]
+
+
+class GridConvergence(BaseModel):
+    """GCI of one quantity of one variant over two or three meshes (Roache; Celik et al. 2008)."""
+
+    variant: str
+    bc: BoundaryCondition | None = None
+    key: str
+    label: str
+    unit: str
+    scale: float = 1.0
+    current_a: float | None = Field(None, description="Design-point current; None = system-level quantity")
+    systems: list[str] = Field(description="Coarse → fine")
+    meshes: list[str]
+    element_size_mm: list[float]
+    values: list[float]
+    r: float = Field(description="Refinement ratio of the two finest meshes")
+    p_observed: float | None = None
+    p_used: float
+    fs: float
+    gci_fine: float = Field(description="Relative uncertainty band of the finest mesh")
+    f_extrapolated: float | None = None
+    status: ConvergenceStatus
+
+
+class CalibrationSettings(_Frozen):
+    """Fit the passive-layer factors of the 1D twin to ANSYS systems, then rerun every twin with them."""
+
+    systems: list[str] = Field([], description="System letters to fit on; empty = systems of the reference variant")
+    params: list[Literal["hot_side_factor", "cold_side_factor", "r_el_extra_mohm"]] = [
+        "hot_side_factor",
+        "cold_side_factor",
+        "r_el_extra_mohm",
+    ]
+
+
+class TwinCalibration(BaseModel):
+    """Result of the twin calibration: fitted factors and the misfit on the fit and the validation systems."""
+
+    fitted_on: list[str]
+    validated_on: list[str] = []
+    params: list[str]
+    initial: dict[str, float]
+    fitted: dict[str, float]
+    rms_fit_before: float | None = None
+    rms_fit_after: float | None = None
+    rms_validation_before: float | None = None
+    rms_validation_after: float | None = None
+    n_residuals: int = 0
+    success: bool = False
+    message: str = ""
+
+
 class PipelineReport(BaseModel):
     profile: str
     sources: list[SourceSummary] = []
     parameters: list[ResolvedParameter] = []
     systems: list[SystemReport] = []
     comparison: list[VariantComparison] = []
+    convergence: list[GridConvergence] = []
+    calibration: TwinCalibration | None = None
     issues: list[Issue] = []
 
 
@@ -589,7 +658,9 @@ class RunSettings(_Frozen):
     default_condition: CaseCondition | None = Field(None, description="None = the profile's default")
     conditions: dict[str, CaseCondition] = Field({}, description="Per system letter; overrides the default")
     variants: dict[str, str] = Field({}, description="System letter → variant, e.g. {'B': 'A5'}")
+    meshes: dict[str, str] = Field({}, description="System letter → mesh label of the profile, e.g. {'C': 'C1'}")
     reference_variant: str | None = None
+    calibration: CalibrationSettings | None = Field(None, description="None = twin with the profile factors")
 
 
 class StackLayer(_Frozen):

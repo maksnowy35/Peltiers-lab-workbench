@@ -95,3 +95,31 @@ def test_overlay_places_calibrates_and_follows_the_view(tab):
         viewer.get_by_role("button", name="Download nodes (CSV)").click()
     lines = open(download.value.path(), encoding="utf-8").read().splitlines()
     assert lines[0] == "body,x [mm],y [mm],Electric voltage [V]" and len(lines) > 100
+
+
+def test_calibration_and_mesh_convergence(tab):
+    page = tab().open("/pipeline")
+    panel = page.locator("app-parameters-panel")
+    examples = panel.locator(".examples li")
+    examples.filter(has_text="A0/A5/A10").get_by_role("button", name="Add").click()
+    expect(panel.get_by_role("heading", name="Recognized parameters")).to_be_visible()
+    examples.filter(has_text="system D").get_by_role("button", name="Add").click()
+    expect(panel.locator(".fields").first.locator("select")).to_have_count(5)  # A-D and the reference
+    variants = panel.locator(".fields").first.locator("select")
+    for k, variant in enumerate(["A0", "A5", "A10"]):
+        variants.nth(k).select_option(variant)
+    meshes = panel.locator(".mesh-fields select")
+    for k in range(3):
+        meshes.nth(k).select_option("C1")
+    current = panel.get_by_label("Current")
+    current.fill("0.8")
+    current.press("Enter")
+    panel.get_by_label("Calibrate the 1D twin").check()
+    panel.get_by_role("button", name="Run pipeline").click()
+    gci = panel.locator(".card", has=page.get_by_role("heading", name="Mesh convergence"))
+    expect(gci).to_contain_text("A10")
+    expect(gci).to_contain_text("C1 / C2 (C / D)")
+    expect(gci.locator("tbody tr", has_text="ΔT_TE").first).to_contain_text("Converged")
+    # A0 carries only the open circuit in this table: too few observations, the calibration is reported
+    findings = panel.locator(".card", has=page.get_by_role("heading", name="Findings"))
+    expect(findings).to_contain_text("not enough to calibrate")

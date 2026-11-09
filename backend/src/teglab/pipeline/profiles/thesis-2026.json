@@ -40,5 +40,6 @@
   },
   "contacts": {"tcc_w_m2k": 1.0e5, "ecc_s_m2": 1.0e9},
   "twin": {"hot_side_factor": 1.479, "cold_side_factor": 0.935, "r_el_extra_mohm": 0.0},
+  "meshes": {"C1": {"element_size_mm": 0.2}, "C2": {"element_size_mm": 0.1}},
   "reference_variant": "A0"
 }

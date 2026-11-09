@@ -60,7 +60,7 @@ and commit the new lockfile.
 cd /c/dev/teglab            # Git Bash path of C:\dev\teglab
 ./dev.sh doctor             # versions of Python, Node, npm, git, Docker
 ./dev.sh setup              # .venv + pinned backend + frontend (first time ~2-4 min)
-./dev.sh test               # 147 backend tests, ~15 s
+./dev.sh test               # 155 backend tests, ~15 s
 ./dev.sh api                # terminal 1: API on http://127.0.0.1:8000 (docs at /docs)
 ./dev.sh ui                 # terminal 2: UI on http://localhost:4200
 ```

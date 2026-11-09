@@ -123,6 +123,8 @@ backend/src/teglab/pipeline/
 ├── compare.py       variant ratios, gain attribution, cold-side contact signature
 ├── twin.py          1D twin of every system: open circuit, own P_max, every design-point current
 ├── qa.py            QA gates per system: balance, bracketing, analytic bound, contacts, FEM vs 1D
+├── calibrate.py     twin factors fitted on the reference variant, validated on the other systems
+├── convergence.py   GCI across systems of one variant on different meshes
 ├── fields.py        nodal reductions: area-weighted faces, contact jumps and states, layer profile
 ├── nodal.py         datasets: ingestion, stack inference, contact checks, view projection, store
 ├── synthetic.py     physically consistent unit cell, Mechanical text writer, PNG renderer
@@ -232,6 +234,13 @@ system-level quantities (U_oc, ΔT_TE, K, R, P_max, I_opt, Q_h or T_h,ext) and e
 a limit and a verdict (pass, warn up to twice the tolerance, fail, skip when the data are not exported).
 With the A0-TT calibration factors in the thesis profile the twin agrees with case A0-TT within 0.01 %;
 for A10 under BC-QT it exposes the contact resistance that the ANSYS model lost (lower U under load).
+
+### 4.5 Calibration and mesh convergence
+
+`calibrate.py` fits `hot_side_factor`, `cold_side_factor` and `r_el_extra_mohm` (bounded least squares,
+factors in log10) to residuals of the open circuit (U_oc, ΔT_TE, Q_h under BC-TT) and of every design point
+(U on the U_oc scale, Q_c, Q_h under BC-TT). `convergence.py` groups the systems by variant and BC, orders
+the meshes coarse → fine by element size and applies `analysis.gci` to every shared quantity.
 
 ---
 
@@ -361,6 +370,7 @@ The full test plan - static checks, browser tests, container and manual checks -
 | `test_maxpower_compare.py` | Table 5.2 and 5.3, exact optimum vs brute force and vs the finite-volume model, attribution identities |
 | `test_fields_overlay.py` | synthetic seven-body unit cell with known drops, non-matching meshes, graded faces, image calibration |
 | `test_nodal.py` | synthetic cell vs TEG theory (energy balance, U = αΔT − I·R), export → zip → ingest round trip recovering TCC_eff/ECC_eff to 1e-6, bonded and deviating contacts, stack inference (flipped, rotated, without T), ingestion edge cases, view projection, store bounds |
+| `test_convergence_calibration.py` | GCI of C/D vs thesis Section 3.5.3, observed order on three meshes, oscillation, calibration on A0-TT, API, CLI |
 | `test_twin_qa.py` | twin vs case A0-TT (0.1 %), variant geometry, unbracketed P_max, inactive contacts, gate bands, API |
 | `test_ts_contract.py` | the TypeScript mirror is up to date; request/response shapes |
 | `test_cli.py`, `test_api.py` | command line; REST endpoints (parameter runs, dataset life cycle, examples, uploads, error codes, OpenAPI schema) |

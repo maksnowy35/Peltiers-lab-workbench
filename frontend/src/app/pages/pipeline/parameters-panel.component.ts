@@ -4,7 +4,7 @@ import { NumPipe, PctPipe } from '../../core/format';
 import { PipelineApiService } from '../../core/pipeline-api.service';
 import { Badge, QA_BADGE, QaStatus, levelBadge } from '../../core/pipeline-labels';
 import { BcMode, PipelineStateService } from '../../core/pipeline-state.service';
-import { Issue, ResistanceBreakdown, SystemReport, TwinMetric } from '../../core/pipeline.models';
+import { GridConvergence, Issue, ResistanceBreakdown, SystemReport, TwinMetric } from '../../core/pipeline.models';
 import { ThemeService } from '../../core/theme.service';
 import { NumField } from '../../shared/fields';
 import { PlotComponent, PlotTrace } from '../../shared/plot.component';
@@ -19,6 +19,20 @@ interface IssueRow {
   where: string;
   issue: Issue;
 }
+
+const GCI_BADGE: Record<GridConvergence['status'], Badge> = {
+  converged: { kind: 'ok', icon: '✓', text: 'Converged' },
+  identical: { kind: 'ok', icon: '=', text: 'Identical' },
+  check: { kind: 'warn', icon: '!', text: 'Check' },
+  oscillatory: { kind: 'warn', icon: '~', text: 'Oscillatory' },
+  'not-converged': { kind: 'error', icon: '×', text: 'Not converged' },
+};
+
+const PARAM_LABEL: Record<string, string> = {
+  hot_side_factor: 'Hot-side passive factor',
+  cold_side_factor: 'Cold-side passive factor',
+  r_el_extra_mohm: 'Series resistance [mΩ]',
+};
 
 const CONTACT_BADGE: Record<ResistanceBreakdown['contact_verdict'], Badge> = {
   active: { kind: 'ok', icon: '✓', text: 'Active' },
@@ -43,6 +57,8 @@ export class ParametersPanelComponent {
   protected readonly showInfo = signal(false);
   protected readonly levelBadge = levelBadge;
   protected readonly qaBadge = QA_BADGE;
+  protected readonly gciBadge = GCI_BADGE;
+  protected readonly paramLabel = PARAM_LABEL;
   protected readonly twinSystem = signal<string | null>(null);
 
   /** The system whose twin and gates are shown: the user's pick, else the first one with a failed gate. */
@@ -194,6 +210,15 @@ export class ParametersPanelComponent {
   protected setVariant(letter: string, ev: Event): void {
     const value = (ev.target as HTMLSelectElement).value;
     this.state.variants.update((v) => ({ ...v, [letter]: value }));
+  }
+
+  protected setMesh(letter: string, ev: Event): void {
+    const value = (ev.target as HTMLSelectElement).value;
+    this.state.meshes.update((m) => ({ ...m, [letter]: value }));
+  }
+
+  protected setCalibrate(ev: Event): void {
+    this.state.calibrate.set((ev.target as HTMLInputElement).checked);
   }
 
   protected setReference(ev: Event): void {

@@ -118,7 +118,9 @@ def run(
         default_condition=s.default_condition,
         conditions=s.conditions,
         variants=s.variants,
+        meshes=s.meshes,
         reference_variant=s.reference_variant,
+        calibration=s.calibration,
     )
     return run_pipeline(_read(files), options).report
 

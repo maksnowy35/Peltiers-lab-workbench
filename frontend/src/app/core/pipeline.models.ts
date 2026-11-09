@@ -45,6 +45,13 @@ export interface BodyInfo {
   t_mean_c: number | null;
 }
 
+/** Fit the passive-layer factors of the 1D twin to ANSYS systems, then rerun every twin with them. */
+export interface CalibrationSettings {
+  /** System letters to fit on; empty = systems of the reference variant */
+  systems?: string[];
+  params?: ('hot_side_factor' | 'cold_side_factor' | 'r_el_extra_mohm')[];
+}
+
 /** Thermal boundary condition of one analysis system (thesis Table 3.3). */
 export interface CaseCondition {
   bc: BoundaryCondition;
@@ -132,6 +139,32 @@ export interface GeometryProfile {
   c3d: number;
 }
 
+/** GCI of one quantity of one variant over two or three meshes (Roache; Celik et al. 2008). */
+export interface GridConvergence {
+  variant: string;
+  bc: BoundaryCondition | null;
+  key: string;
+  label: string;
+  unit: string;
+  scale: number;
+  /** Design-point current; None = system-level quantity */
+  current_a: number | null;
+  /** Coarse → fine */
+  systems: string[];
+  meshes: string[];
+  element_size_mm: number[];
+  values: number[];
+  /** Refinement ratio of the two finest meshes */
+  r: number;
+  p_observed: number | null;
+  p_used: number;
+  fs: number;
+  /** Relative uncertainty band of the finest mesh */
+  gci_fine: number;
+  f_extrapolated: number | null;
+  status: 'converged' | 'check' | 'not-converged' | 'oscillatory' | 'identical';
+}
+
 /** Two reference points: pixel coordinates (origin top-left, y down) and model coordinates [mm]. */
 export interface ImageCalibration {
   width_px: number;
@@ -215,6 +248,14 @@ export interface MaxPowerFit {
   suggested_currents_a: number[];
 }
 
+/** Size of one mesh of the project; r between two meshes comes from node counts if both have them. */
+export interface MeshLevel {
+  /** Representative element size in the legs */
+  element_size_mm: number;
+  /** Node count of the whole model (optional) */
+  nodes: number | null;
+}
+
 export interface NodalDatasetInfo {
   dataset_id: string;
   title: string | null;
@@ -286,6 +327,8 @@ export interface PipelineReport {
   parameters: ResolvedParameter[];
   systems: SystemReport[];
   comparison: VariantComparison[];
+  convergence: GridConvergence[];
+  calibration: TwinCalibration | null;
   issues: Issue[];
 }
 
@@ -327,6 +370,8 @@ export interface ProjectProfile {
   materials: MaterialProfile;
   contacts: ContactProfile;
   twin: TwinProfile;
+  /** Mesh label (from the system rules) → size, for the GCI */
+  meshes: Record<string, MeshLevel>;
   reference_variant: string;
 }
 
@@ -396,7 +441,11 @@ export interface RunSettings {
   conditions?: Record<string, CaseConditionInput>;
   /** System letter → variant, e.g. {'B': 'A5'} */
   variants?: Record<string, string>;
+  /** System letter → mesh label of the profile, e.g. {'C': 'C1'} */
+  meshes?: Record<string, string>;
   reference_variant?: string | null;
+  /** None = twin with the profile factors */
+  calibration?: CalibrationSettings | null;
 }
 
 export interface SourceSummary {
@@ -474,6 +523,22 @@ export interface ThermalSplit {
   /** Q/(TCC·2A_h) - drop across the hot contacts */
   contact_dt_hot_expected_k: number | null;
   contact_dt_cold_expected_k: number | null;
+}
+
+/** Result of the twin calibration: fitted factors and the misfit on the fit and the validation systems. */
+export interface TwinCalibration {
+  fitted_on: string[];
+  validated_on: string[];
+  params: string[];
+  initial: Record<string, number>;
+  fitted: Record<string, number>;
+  rms_fit_before: number | null;
+  rms_fit_after: number | null;
+  rms_validation_before: number | null;
+  rms_validation_after: number | null;
+  n_residuals: number;
+  success: boolean;
+  message: string;
 }
 
 /** One system-level quantity: ANSYS value, 1D twin value and their relative deviation. */

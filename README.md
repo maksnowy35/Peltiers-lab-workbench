@@ -69,7 +69,7 @@ Git - on Windows, Git for Windows provides the Git Bash terminal used below.
 
 ```bash
 ./dev.sh setup     # .venv + backend with pinned versions + frontend
-./dev.sh test      # 147 tests, incl. the thesis validation and the ANSYS export script
+./dev.sh test      # 155 tests, incl. the thesis validation and the ANSYS export script
 ./dev.sh api       # terminal 1 - API on http://127.0.0.1:8000 (docs at /docs)
 ./dev.sh ui        # terminal 2 - UI on http://localhost:4200 (/api is proxied to :8000)
 ./dev.sh check     # lint, tests, API contract and production build - before every push
@@ -105,13 +105,22 @@ point, bracketing of P_max, the analytic upper bound, contact definitions, Seebe
 with the tested value and the limit, so the checks done by hand before a result goes into a table are
 reproducible. With the thesis profile the twin reproduces case A0-TT within 0.01 %.
 
+The passive-layer factors of the twin can be **calibrated** on the reference variant (bounded least
+squares on the open circuit and every design point) and **validated** on the other systems, and every
+variant solved on more than one mesh gets a **mesh-convergence study** (GCI of the finest mesh at every
+shared current and on U_oc, K and R). Systems C and D of the thesis give ΔT_TE = 76.159 / 76.187 K on
+meshes C1/C2, GCI = 0.037 % and a Richardson value of 76.196 K, as in Section 3.5.3.
+
 ![ANSYS pipeline page: temperature through the stack and contact checks of a nodal export](docs/img/pipeline.png)
 
 ```bash
 cd backend
 python -m teglab.pipeline inspect src/teglab/pipeline/examples/*.csv
 python -m teglab.pipeline run src/teglab/pipeline/examples/design-points_A-series_QT.csv \
-       src/teglab/pipeline/examples/outline_fig-3-10_system-D.csv --current 0.8 --system A=A0 --system B=A5 --system C=A10
+       src/teglab/pipeline/examples/outline_fig-3-10_system-D.csv --current 0.8 --system A=A0 --system B=A5 --system C=A10 \
+       --mesh A=C1 --mesh B=C1 --mesh C=C1          # mesh labels for the GCI (D is C2 from its title)
+python -m teglab.pipeline run src/teglab/pipeline/examples/design-points_A0-TT_table-4-4.csv \
+       --bc TT --t-hot 100 --system A=A0 --calibrate   # fit the 1D twin on A0 and validate on the rest
 ```
 
 | Endpoint (`/api/pipeline/…`) | Does |

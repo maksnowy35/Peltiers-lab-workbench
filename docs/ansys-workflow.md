@@ -79,6 +79,30 @@ Without them (all factors 1) the passive drop is smaller than in ANSYS and U_oc 
 U and P at single points are compared on the scale of U_oc and P_max, because both pass through zero.
 An unbracketed P_max is a point value, not the optimum, and is not compared with the twin's maximum.
 
+### Calibrating the twin
+
+*Calibrate the 1D twin* (page) or `--calibrate [LETTERS]` (CLI) fits the hot- and cold-side passive factors
+and the series resistance to the open circuit and every design point of the reference variant (or the
+listed systems), then reruns every twin with the fitted factors. The misfit is reported before and after,
+on the fit systems and on the others (validation): factors fitted on A0 that also hold for A5 and A10 mean
+the calibrated 1D model can stand in for FEM between runs. A0-TT from factors 1.0: RMS misfit 0.84 % → 0.010 %
+(12 observations). The fit needs more observations than parameters, so a table with only an open circuit
+for the reference variant is reported and left uncalibrated.
+
+### Mesh convergence
+
+Declare the meshes in the profile and give every system its mesh (system rules, the page, or `--mesh C=C1`):
+
+```json
+"meshes": {"C1": {"element_size_mm": 0.2}, "C2": {"element_size_mm": 0.1}}
+```
+
+Systems of the same variant and BC on different meshes are compared at every design-point current they share
+(ΔT_TE, U, P, Q_c, T_max) and on U_oc, K and R. Two meshes use p = 2 and Fs = 3, three meshes with a constant
+ratio the observed order and Fs = 1.25; r comes from node counts when both meshes have them, else from the
+element sizes. Converged: GCI ≤ 1 %, check: ≤ 5 %; three meshes that do not converge monotonically are flagged
+as oscillatory.
+
 ## 4 · Close the loop
 
 1. Calibrate the 1D model on the reference system (Model & calibration page).

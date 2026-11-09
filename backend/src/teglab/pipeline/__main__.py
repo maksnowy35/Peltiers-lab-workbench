@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 from .run import RunOptions, inspect_files, run_pipeline
-from .schemas import CaseCondition, Level, PipelineReport, ProjectProfile, load_profile
+from .schemas import CalibrationSettings, CaseCondition, Level, PipelineReport, ProjectProfile, load_profile
 
 
 def _condition(args: argparse.Namespace, profile: ProjectProfile) -> CaseCondition | None:
@@ -95,6 +95,26 @@ def _print_run(report: PipelineReport) -> None:
         print("  QA: " + ", ".join(f"{g.code} {marks[g.status]}" for g in s.qa))
         for i in s.issues:
             print(f"  [{i.level.value}] {i.message}")
+    if report.calibration is not None:
+        c = report.calibration
+        print(f"\n1D twin calibration on {', '.join(c.fitted_on)} ({c.n_residuals} observations, {c.message}):")
+        for k in c.params:
+            print(f"  {k:<18} {c.initial[k]:.4g} → {c.fitted[k]:.4g}")
+        print(f"  rms misfit (fit)        {_fmt(c.rms_fit_before, 100, 3)} % → {_fmt(c.rms_fit_after, 100, 3)} %")
+        if c.validated_on:
+            print(
+                f"  rms misfit ({', '.join(c.validated_on)})   "
+                f"{_fmt(c.rms_validation_before, 100, 3)} % → {_fmt(c.rms_validation_after, 100, 3)} %"
+            )
+    if report.convergence:
+        print("\nMesh convergence (GCI of the finest mesh):")
+        for g in report.convergence:
+            at = "" if g.current_a is None else f" at {g.current_a:g} A"
+            vals = " / ".join(_fmt(v, g.scale) for v in g.values)
+            print(
+                f"  {g.variant} {g.label}{at}: {vals} {g.unit} on {'/'.join(g.meshes)}, r = {g.r:.3g}, "
+                f"p = {g.p_used:.3g} → GCI {g.gci_fine:.3%} ({g.status})"
+            )
     if report.comparison:
         print("\nVariant comparison (ratios to the reference):")
         print(
@@ -130,7 +150,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--t-cold", type=float, default=20.0, help="cold-face temperature [°C] (with --bc)")
     ap.add_argument("--current", type=float, help="operating current [A] for single-point outline exports")
     ap.add_argument("--system", action="append", default=[], metavar="LETTER=VARIANT", help="e.g. B=A5 (repeatable)")
+    ap.add_argument("--mesh", action="append", default=[], metavar="LETTER=MESH", help="e.g. C=C1 (repeatable)")
     ap.add_argument("--reference", help="reference variant for the comparison (default from the profile)")
+    ap.add_argument(
+        "--calibrate",
+        nargs="*",
+        metavar="LETTER",
+        help="fit the 1D twin factors on these systems (no letters = the reference variant) and validate on the rest",
+    )
     ap.add_argument("--json", action="store_true", help="print the full report as JSON")
     args = ap.parse_args(argv)
 
@@ -145,7 +172,9 @@ def main(argv: list[str] | None = None) -> int:
         profile=profile,
         default_condition=_condition(args, profile),
         variants=variants,
+        meshes=dict(item.split("=", 1) for item in args.mesh),
         reference_variant=args.reference,
+        calibration=None if args.calibrate is None else CalibrationSettings(systems=args.calibrate),
     )
     report = run_pipeline(files, options).report
     print(report.model_dump_json(indent=2)) if args.json else _print_run(report)

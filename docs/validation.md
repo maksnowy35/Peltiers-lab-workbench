@@ -118,3 +118,5 @@ thesis (taper helps under fixed heat input; the gain comes from lower K, not fro
 
 The GCI calculator on the Analysis page reproduces the thesis numbers: ΔT_TE on meshes C1/C2
 (76.159 / 76.187 K, r = 1.99, p = 2, Fs = 3) gives GCI = 0.037 % and a Richardson value of 76.197 K.
+The ANSYS pipeline runs the same study by itself when systems C (mesh C1) and D (C2) are loaded together:
+GCI = 0.037 % and 76.196 K with r = 2 from the element sizes of the profile.

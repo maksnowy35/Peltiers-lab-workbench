@@ -82,6 +82,17 @@ def _print_run(report: PipelineReport) -> None:
             f"exact BC-QT {_fmt(an.exact_w, 1e3)} mW "
             f"at {_fmt(an.exact_i_opt_a)} A, BC-TT α²ΔT²/(4R) {_fmt(an.tt_w, 1e3)} mW"
         )
+        if s.twin.status == "ok":
+            tw = "calibrated" if s.twin.calibrated else "profile factors"
+            print(f"  1D twin ({tw}):")
+            for m in s.twin.metrics:
+                if m.ansys is not None:
+                    dev = "" if m.deviation is None else f"  {m.deviation:+.2%}"
+                    print(f"    {m.label:<26} FEM {_fmt(m.ansys, m.scale)}  1D {_fmt(m.model, m.scale)} {m.unit}{dev}")
+        elif s.twin.note:
+            print(f"  1D twin skipped: {s.twin.note}")
+        marks = {"pass": "ok", "warn": "WARN", "fail": "FAIL", "skip": "-"}
+        print("  QA: " + ", ".join(f"{g.code} {marks[g.status]}" for g in s.qa))
         for i in s.issues:
             print(f"  [{i.level.value}] {i.message}")
     if report.comparison:

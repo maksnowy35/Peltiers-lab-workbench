@@ -2,12 +2,18 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 
 import { NumPipe, PctPipe } from '../../core/format';
 import { PipelineApiService } from '../../core/pipeline-api.service';
-import { Badge, levelBadge } from '../../core/pipeline-labels';
+import { Badge, QA_BADGE, QaStatus, levelBadge } from '../../core/pipeline-labels';
 import { BcMode, PipelineStateService } from '../../core/pipeline-state.service';
-import { Issue, ResistanceBreakdown, SystemReport } from '../../core/pipeline.models';
+import { Issue, ResistanceBreakdown, SystemReport, TwinMetric } from '../../core/pipeline.models';
 import { ThemeService } from '../../core/theme.service';
 import { NumField } from '../../shared/fields';
 import { PlotComponent, PlotTrace } from '../../shared/plot.component';
+
+interface QaCount {
+  pass: number;
+  warn: number;
+  fail: number;
+}
 
 interface IssueRow {
   where: string;
@@ -36,6 +42,33 @@ export class ParametersPanelComponent {
   protected readonly dragging = signal(false);
   protected readonly showInfo = signal(false);
   protected readonly levelBadge = levelBadge;
+  protected readonly qaBadge = QA_BADGE;
+  protected readonly twinSystem = signal<string | null>(null);
+
+  /** The system whose twin and gates are shown: the user's pick, else the first one with a failed gate. */
+  protected readonly twinSelected = computed<SystemReport | null>(() => {
+    const systems = this.state.report()?.systems ?? [];
+    const pick = this.twinSystem();
+    return (
+      systems.find((s) => s.system === pick) ??
+      systems.find((s) => s.qa.some((g) => g.status === 'fail')) ??
+      systems[0] ??
+      null
+    );
+  });
+
+  protected readonly twinPointTraces = computed<PlotTrace[]>(() => {
+    const s = this.twinSelected();
+    const pts = (s?.twin.points ?? []).filter((p) => p.voltage_ansys_v !== null);
+    if (!pts.length) {
+      return [];
+    }
+    const x = pts.map((p) => p.current_a);
+    return [
+      { name: 'ANSYS', x, y: pts.map((p) => p.voltage_ansys_v), mode: 'markers', slot: 0, markerSize: 9 },
+      { name: '1D twin', x, y: pts.map((p) => p.voltage_model_v), mode: 'lines+markers', slot: 1, hoverSuffix: ' (1D)' },
+    ];
+  });
 
   protected readonly examples = computed(() => this.state.examples().filter((e) => e.kind === 'parameters'));
 
@@ -170,6 +203,29 @@ export class ParametersPanelComponent {
   // ---------------------------------------------------------------- report helpers
   protected systemLabel(s: SystemReport): string {
     return `${s.system} · ${s.variant ?? '?'}`;
+  }
+
+  protected qaCount(s: SystemReport): QaCount {
+    const n: QaCount = { pass: 0, warn: 0, fail: 0 };
+    for (const g of s.qa) {
+      if (g.status !== 'skip') {
+        n[g.status]++;
+      }
+    }
+    return n;
+  }
+
+  protected metricOf(s: SystemReport, key: string): TwinMetric | undefined {
+    return s.twin.metrics.find((m) => m.key === key);
+  }
+
+  protected worstPoint(s: SystemReport): number | null {
+    const w = s.twin.points.map((p) => p.worst_deviation).filter((v): v is number => v !== null);
+    return w.length ? Math.max(...w) : null;
+  }
+
+  protected statusBadge(status: QaStatus): Badge {
+    return QA_BADGE[status];
   }
 
   protected contactBadge(s: SystemReport): Badge {

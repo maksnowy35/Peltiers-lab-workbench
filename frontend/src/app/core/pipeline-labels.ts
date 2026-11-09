@@ -1,4 +1,6 @@
-import { ContactVerdict, Level, NodalKey, View } from './pipeline.models';
+import { ContactVerdict, Level, NodalKey, QaGate, View } from './pipeline.models';
+
+export type QaStatus = QaGate['status'];
 
 /** Exhaustive label maps: adding a key on the backend breaks the build here until it is labeled. */
 export const NODAL_LABEL: Record<NodalKey, string> = {
@@ -60,3 +62,10 @@ export function verdictBadge(verdict: ContactVerdict, atActiveLayer: boolean): B
       return { kind: 'info', icon: '-', text: 'n/a' };
   }
 }
+
+export const QA_BADGE: Record<QaStatus, Badge> = {
+  pass: { kind: 'ok', icon: '✓', text: 'Pass' },
+  warn: { kind: 'warn', icon: '!', text: 'Check' },
+  fail: { kind: 'error', icon: '×', text: 'Fail' },
+  skip: { kind: 'info', icon: '-', text: 'n/a' },
+};

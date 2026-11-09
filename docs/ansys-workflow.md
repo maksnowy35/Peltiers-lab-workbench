@@ -51,6 +51,34 @@ sure the suggestion is.
 * hot-side passive resistance vs the same two model variants,
 * leg conductance K = Q_h/ΔT_TE vs the model.
 
+### 1D twin and QA gates
+
+Each system is rebuilt from the project profile and solved by the 1D model: open circuit (U_oc, ΔT_TE, K),
+the twin's own maximum-power point (P_max, I_opt) and every ANSYS design-point current (U, P, Q_h, Q_c).
+The variant angle sets the frustum, the system's boundary condition the BC. The `twin` block of the profile
+holds the passive-layer factors and the tolerances:
+
+```json
+"twin": {"hot_side_factor": 1.479, "cold_side_factor": 0.935, "r_el_extra_mohm": 0.0,
+         "tol_u_oc": 0.02, "tol_dt_te": 0.03, "tol_p_max": 0.05, "tol_point": 0.05}
+```
+
+The thesis profile carries the factors of the A0-TT calibration, so case A0-TT is reproduced within 0.01 %.
+Without them (all factors 1) the passive drop is smaller than in ANSYS and U_oc comes out ~0.7 % high.
+
+| Gate | Pass | Meaning of a failure |
+| --- | --- | --- |
+| `energy-balance` | max \|Q_h − Q_c − U·I\|/Q_h ≤ 0.5 % (warn ≤ 2 %) | not converged or a probe on the wrong face |
+| `open-circuit` | a design point at 0 A | U_oc, ΔT_TE and K are extrapolated |
+| `p-max-bracketed` | the optimum lies between swept currents | the fitted P_max is an extrapolation |
+| `upper-bound` | P_max ≤ α²Q²/(4K²R) (BC-QT) or α²ΔT²/(4R) (BC-TT) | inconsistent material data, BC or sign convention |
+| `contacts` | implied contact resistance as specified | the contact conductances did not take effect |
+| `seebeck` | \|U_oc/ΔT_TE − α_pn\|/α_pn ≤ 2 % | ΔT_TE read at the wrong faces, or α differs |
+| `twin-*` | FEM vs 1D within the profile tolerances (warn up to 2×) | 3D effects or a modeling difference worth a look |
+
+U and P at single points are compared on the scale of U_oc and P_max, because both pass through zero.
+An unbracketed P_max is a point value, not the optimum, and is not compared with the twin's maximum.
+
 ## 4 · Close the loop
 
 1. Calibrate the 1D model on the reference system (Model & calibration page).

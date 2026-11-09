@@ -28,6 +28,7 @@ from .extract import (
 )
 from .frames import CanonicalData, build_canonical, resolve_tables
 from .maxpower import p_max_frozen, p_max_qt_exact, p_max_tt
+from .qa import qa_gates
 from .readers import NodalTable, RawTable, read_source
 from .schemas import (
     AnalyticPower,
@@ -45,6 +46,7 @@ from .schemas import (
     SystemReport,
     ThermalSplit,
 )
+from .twin import twin_system
 
 __all__ = ["PipelineResult", "RunOptions", "inspect_files", "run_pipeline", "summarize"]
 
@@ -224,7 +226,15 @@ def _system_issues(letter: str, r: pd.Series, profile: ProjectProfile) -> list[I
     return out
 
 
-def _system_report(letter: str, r: pd.Series, profile: ProjectProfile) -> SystemReport:
+def _system_report(
+    letter: str, r: pd.Series, profile: ProjectProfile, frame: pd.DataFrame | None = None
+) -> SystemReport:
+    points = (
+        frame.xs(letter, level="system")
+        if frame is not None and letter in frame.index.get_level_values("system")
+        else None
+    )
+    twin = twin_system(r, points, profile)
     return SystemReport(
         system=letter,
         title=str(r.get("title") or ""),
@@ -286,6 +296,8 @@ def _system_report(letter: str, r: pd.Series, profile: ProjectProfile) -> System
             r_ohm=_f(r.get("r_1d_ohm")),
             alpha_v_k=_f(r.get("alpha_v_k")),
         ),
+        twin=twin,
+        qa=qa_gates(r, twin, profile),
         issues=_system_issues(letter, r, profile),
     )
 
@@ -308,7 +320,7 @@ def run_pipeline(files: Sequence[tuple[str, bytes]], options: RunOptions) -> Pip
         return PipelineResult(report, canonical, nodal=nodal)
 
     summary = summarize(canonical.frame, canonical.systems, profile)
-    report.systems = [_system_report(str(letter), row, profile) for letter, row in summary.iterrows()]
+    report.systems = [_system_report(str(letter), row, profile, canonical.frame) for letter, row in summary.iterrows()]
     reference = pick_reference(summary, options.reference_variant or profile.reference_variant)
     if reference is not None and summary["variant"].notna().sum() > 1:
         report.comparison = compare_variants(summary, reference)

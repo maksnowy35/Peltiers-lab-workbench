@@ -121,6 +121,8 @@ backend/src/teglab/pipeline/
 ├── extract.py       per-system physics: open circuit, R_int split, thermal split, P_max fits
 ├── maxpower.py      analytic references: α²Q²/(4K²R), exact BC-QT optimum, α²ΔT²/(4R)
 ├── compare.py       variant ratios, gain attribution, cold-side contact signature
+├── twin.py          1D twin of every system: open circuit, own P_max, every design-point current
+├── qa.py            QA gates per system: balance, bracketing, analytic bound, contacts, FEM vs 1D
 ├── fields.py        nodal reductions: area-weighted faces, contact jumps and states, layer profile
 ├── nodal.py         datasets: ingestion, stack inference, contact checks, view projection, store
 ├── synthetic.py     physically consistent unit cell, Mechanical text writer, PNG renderer
@@ -220,6 +222,16 @@ simulated BC-QT power comes from the collapse of ΔT under current, not from the
 P/P₀ = (α/α₀)²·(Q/Q₀)²·(K₀/K)²·(R₀/R). For A10 against A0: conductance ×2.39, resistance ×0.65,
 net ×1.54 (+54 %, thesis Table 5.3); at fixed temperatures (BC-TT) only the resistance factor remains,
 so the same taper loses 35 %.
+
+### 4.4 The 1D twin and the QA gates
+
+`twin.py` rebuilds each system from the profile (frustum from the variant angle, constant p/n materials,
+TCC/ECC, ceramic and Cu layers with the `twin` factors) and solves it with `solver.py`. It reports the
+system-level quantities (U_oc, ΔT_TE, K, R, P_max, I_opt, Q_h or T_h,ext) and every design point
+(U, P, Q_h, Q_c, ΔT_TE). `qa.py` turns them, together with the extracted physics, into gates with a value,
+a limit and a verdict (pass, warn up to twice the tolerance, fail, skip when the data are not exported).
+With the A0-TT calibration factors in the thesis profile the twin agrees with case A0-TT within 0.01 %;
+for A10 under BC-QT it exposes the contact resistance that the ANSYS model lost (lower U under load).
 
 ---
 
@@ -349,6 +361,7 @@ The full test plan - static checks, browser tests, container and manual checks -
 | `test_maxpower_compare.py` | Table 5.2 and 5.3, exact optimum vs brute force and vs the finite-volume model, attribution identities |
 | `test_fields_overlay.py` | synthetic seven-body unit cell with known drops, non-matching meshes, graded faces, image calibration |
 | `test_nodal.py` | synthetic cell vs TEG theory (energy balance, U = αΔT − I·R), export → zip → ingest round trip recovering TCC_eff/ECC_eff to 1e-6, bonded and deviating contacts, stack inference (flipped, rotated, without T), ingestion edge cases, view projection, store bounds |
+| `test_twin_qa.py` | twin vs case A0-TT (0.1 %), variant geometry, unbracketed P_max, inactive contacts, gate bands, API |
 | `test_ts_contract.py` | the TypeScript mirror is up to date; request/response shapes |
 | `test_cli.py`, `test_api.py` | command line; REST endpoints (parameter runs, dataset life cycle, examples, uploads, error codes, OpenAPI schema) |
 | `../test_ansys_export_script.py` | the Mechanical export script against a stand-in API: script → zip → upload → contact checks → overlay placement; missing node locations; view conventions shared with the backend |

@@ -239,6 +239,124 @@
     </div>
   </div>
 
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2>1D twin and QA gates</h2>
+        <p>
+          Every system solved again with the 1D model (same geometry, materials, contacts and BC) and checked
+          automatically: energy balance, open circuit, bracketing, analytic bound, contacts, FEM vs 1D.
+        </p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>System</th>
+            <th class="left">Twin</th>
+            <th>ΔU_oc</th>
+            <th>ΔT_TE</th>
+            <th>ΔP_max</th>
+            <th>Worst point</th>
+            <th class="left">Gates</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of rep.systems; track s.system) {
+            <tr class="clickable" tabindex="0" [class.selected]="twinSelected()?.system === s.system"
+                [attr.aria-selected]="twinSelected()?.system === s.system"
+                (click)="twinSystem.set(s.system)" (keydown.enter)="twinSystem.set(s.system)">
+              <td><strong>{{ s.system }}</strong> <span class="muted small">{{ s.variant ?? '?' }}</span></td>
+              <td class="left small">
+                {{ s.twin.status === 'ok' ? (s.twin.calibrated ? 'calibrated' : 'profile factors') : s.twin.status }}
+              </td>
+              <td>{{ metricOf(s, 'u_oc_v')?.deviation | pct: 2 : true }}</td>
+              <td>{{ metricOf(s, 'dt_te_k')?.deviation | pct: 2 : true }}</td>
+              <td>{{ metricOf(s, 'p_max_w')?.deviation | pct: 2 : true }}</td>
+              <td>{{ worstPoint(s) | pct: 2 }}</td>
+              <td class="left">
+                @if (qaCount(s); as n) {
+                  <span class="badge ok"><span class="ico" aria-hidden="true">✓</span>{{ n.pass }}</span>
+                  @if (n.warn) {
+                    <span class="badge warn"><span class="ico" aria-hidden="true">!</span>{{ n.warn }}</span>
+                  }
+                  @if (n.fail) {
+                    <span class="badge error"><span class="ico" aria-hidden="true">×</span>{{ n.fail }}</span>
+                  }
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (twinSelected(); as s) {
+      <h3 class="section-title">System {{ s.system }}: gates</h3>
+      <ul class="issues">
+        @for (g of s.qa; track g.code) {
+          <li>
+            <span [class]="'badge ' + statusBadge(g.status).kind">
+              <span class="ico" aria-hidden="true">{{ statusBadge(g.status).icon }}</span>{{ statusBadge(g.status).text }}
+            </span>
+            <div>
+              <strong class="small">{{ g.title }}</strong>
+              @if (g.value !== null) {
+                @if (g.percent) {
+                  <span class="muted small"> · {{ g.value | pct: 2 : true }} (limit ±{{ g.limit | pct: 1 }})</span>
+                } @else {
+                  <span class="muted small"> · {{ g.value | n: 3 }} (limit {{ g.limit | n: 3 }})</span>
+                }
+              }
+              @if (g.detail) {
+                <p class="small">{{ g.detail }}</p>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+
+      @if (s.twin.status === 'ok') {
+        <div class="grid cols-2">
+          <div class="table-wrap">
+            <table class="data">
+              <thead>
+                <tr>
+                  <th class="left">Quantity</th>
+                  <th>ANSYS</th>
+                  <th>1D twin</th>
+                  <th>Deviation</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (m of s.twin.metrics; track m.key) {
+                  <tr>
+                    <td class="left">{{ m.label }} <span class="muted small">[{{ m.unit }}]</span></td>
+                    <td>{{ m.ansys | n: 4 : m.scale }}</td>
+                    <td>{{ m.model | n: 4 : m.scale }}</td>
+                    <td>
+                      @if (m.deviation !== null) {
+                        <span [class]="'badge ' + statusBadge(m.status).kind">{{ m.deviation | pct: 2 : true }}</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (twinPointTraces().length) {
+            <app-plot title="Terminal voltage" subtitle="ANSYS design points vs the 1D twin at the same currents"
+                      [traces]="twinPointTraces()" [yScale]="1000" yTitle="U [mV]" xTitle="I [A]"
+                      hoverMode="closest" [height]="280" />
+          }
+        </div>
+      } @else {
+        <p class="muted small">1D twin {{ s.twin.status }}: {{ s.twin.note }}</p>
+      }
+    }
+  </div>
+
   <div class="grid cols-2">
     <div class="card">
       <app-plot title="Contact resistance" subtitle="What the load points leave for the contacts vs 2/(ECC·A_h) + 2/(ECC·A_c)"

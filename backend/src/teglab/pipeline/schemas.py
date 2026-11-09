@@ -63,6 +63,8 @@ __all__ = [
     "PointsRequest",
     "ProfileRequest",
     "ProjectProfile",
+    "QaGate",
+    "QaStatus",
     "ResistanceBreakdown",
     "ResolvedParameter",
     "RunSettings",
@@ -73,6 +75,10 @@ __all__ = [
     "SystemReport",
     "SystemRule",
     "ThermalSplit",
+    "TwinMetric",
+    "TwinPoint",
+    "TwinProfile",
+    "TwinSystem",
     "VariantComparison",
     "View",
     "load_profile",
@@ -214,6 +220,25 @@ class ContactProfile(_Frozen):
     ecc_s_m2: float = Field(1.0e9, gt=0)
 
 
+class TwinProfile(_Frozen):
+    """Settings of the 1D twin that is run for every system (``twin.py``).
+
+    The factors scale the passive (ceramic + Cu) thermal resistance on each side and add a series
+    resistance; defaults are uncalibrated physics.  Tolerances are relative and decide the QA verdicts.
+    """
+
+    ceramic_k_w_mk: float = Field(35.0, gt=0)
+    cu_k_w_mk: float = Field(400.0, gt=0)
+    hot_side_factor: float = Field(1.0, gt=0, description="Calibration factor on the hot-side passive resistance")
+    cold_side_factor: float = Field(1.0, gt=0, description="Calibration factor on the cold-side passive resistance")
+    r_el_extra_mohm: float = Field(0.0, ge=-50, le=500, description="Series resistance correction (leads, crowding)")
+    n_elements: int = Field(30, ge=8, le=200, description="Finite volumes per leg")
+    tol_u_oc: float = Field(0.02, gt=0, lt=1, description="Relative tolerance on U_oc")
+    tol_dt_te: float = Field(0.03, gt=0, lt=1, description="Relative tolerance on ΔT_TE at open circuit")
+    tol_p_max: float = Field(0.05, gt=0, lt=1, description="Relative tolerance on P_max (FEM vs 1D)")
+    tol_point: float = Field(0.05, gt=0, lt=1, description="Relative tolerance on U, P and Q at single points")
+
+
 class CaseCondition(_Frozen):
     """Thermal boundary condition of one analysis system (thesis Table 3.3)."""
 
@@ -253,6 +278,7 @@ class ProjectProfile(_Frozen):
     geometry: GeometryProfile = GeometryProfile()
     materials: MaterialProfile = MaterialProfile()
     contacts: ContactProfile = ContactProfile()
+    twin: TwinProfile = TwinProfile()
     reference_variant: str = "A0"
 
     @field_validator("patterns")
@@ -447,6 +473,67 @@ class AnalyticPower(BaseModel):
     alpha_v_k: float | None = None
 
 
+QaStatus = Literal["pass", "warn", "fail", "skip"]
+
+
+class QaGate(BaseModel):
+    """One automatic check of a system: what was tested, against which limit, and the verdict."""
+
+    code: str
+    title: str
+    status: QaStatus
+    value: float | None = None
+    limit: float | None = None
+    percent: bool = Field(True, description="value and limit are fractions to be shown in percent")
+    detail: str = ""
+
+
+class TwinMetric(BaseModel):
+    """One system-level quantity: ANSYS value, 1D twin value and their relative deviation."""
+
+    key: str
+    label: str
+    unit: str = Field(description="Display unit")
+    scale: float = Field(1.0, description="Multiply SI values by this for the display unit")
+    ansys: float | None = None
+    model: float | None = None
+    deviation: float | None = Field(None, description="(model − ANSYS)/|ANSYS|")
+    tolerance: float | None = None
+    status: QaStatus = "skip"
+
+
+class TwinPoint(BaseModel):
+    """One design point solved by the 1D twin at the ANSYS current."""
+
+    design_point: str
+    current_a: float
+    voltage_ansys_v: float | None = None
+    voltage_model_v: float | None = None
+    power_ansys_w: float | None = None
+    power_model_w: float | None = None
+    q_hot_ansys_w: float | None = None
+    q_hot_model_w: float | None = None
+    q_cold_ansys_w: float | None = None
+    q_cold_model_w: float | None = None
+    dt_te_ansys_k: float | None = None
+    dt_te_model_k: float | None = None
+    worst_deviation: float | None = Field(
+        None, description="Largest deviation of U, P (on the U_oc, P_max scale) and Q (relative) at this point"
+    )
+
+
+class TwinSystem(BaseModel):
+    """The 1D twin of one system: same geometry, materials, contacts and boundary condition as in ANSYS."""
+
+    status: Literal["ok", "skipped", "failed"] = "skipped"
+    note: str = ""
+    calibrated: bool = Field(False, description="True if the twin used factors fitted to these ANSYS results")
+    a_hot_mm: float | None = None
+    a_cold_mm: float | None = None
+    metrics: list[TwinMetric] = []
+    points: list[TwinPoint] = []
+
+
 class SystemReport(BaseModel):
     system: str
     title: str = ""
@@ -460,6 +547,8 @@ class SystemReport(BaseModel):
     resistance: ResistanceBreakdown = ResistanceBreakdown()
     max_power: MaxPowerFit = MaxPowerFit()
     analytic: AnalyticPower = AnalyticPower()
+    twin: TwinSystem = TwinSystem()
+    qa: list[QaGate] = []
     issues: list[Issue] = []
 
 

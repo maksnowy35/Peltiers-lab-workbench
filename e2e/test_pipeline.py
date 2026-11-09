@@ -29,7 +29,16 @@ def test_parameter_run_flags_the_inactive_contacts(tab):
     systems = panel.locator("table.data").nth(1).locator("tbody tr")
     expect(systems).to_have_count(3)
     expect(systems.nth(2)).to_contain_text("Inactive")
-    expect(panel.locator(".issues")).to_contain_text("cold leg ends read 0.75 K lower")
+    findings = panel.locator(".card", has=page.get_by_role("heading", name="Findings"))
+    expect(findings.locator(".issues")).to_contain_text("cold leg ends read 0.75 K lower")
+    # 1D twin and QA gates: system C opens first (failed contact gate); its gate list names the cause
+    twin = panel.locator(".card", has=page.get_by_role("heading", name="1D twin and QA gates"))
+    rows = twin.locator("table.data").first.locator("tbody tr")
+    expect(rows).to_have_count(3)
+    expect(twin.get_by_role("heading", name="System C: gates")).to_be_visible()
+    expect(twin.locator(".issues")).to_contain_text("Contact definitions took effect")
+    rows.first.click()
+    expect(twin.get_by_role("heading", name="System A: gates")).to_be_visible()
 
 
 @pytest.mark.parametrize(

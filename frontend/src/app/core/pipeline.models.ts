@@ -326,7 +326,20 @@ export interface ProjectProfile {
   geometry: GeometryProfile;
   materials: MaterialProfile;
   contacts: ContactProfile;
+  twin: TwinProfile;
   reference_variant: string;
+}
+
+/** One automatic check of a system: what was tested, against which limit, and the verdict. */
+export interface QaGate {
+  code: string;
+  title: string;
+  status: 'pass' | 'warn' | 'fail' | 'skip';
+  value: number | null;
+  limit: number | null;
+  /** value and limit are fractions to be shown in percent */
+  percent: boolean;
+  detail: string;
 }
 
 /** Internal resistance separated into what a regression sees and what is actually ohmic. */
@@ -433,6 +446,8 @@ export interface SystemReport {
   resistance: ResistanceBreakdown;
   max_power: MaxPowerFit;
   analytic: AnalyticPower;
+  twin: TwinSystem;
+  qa: QaGate[];
   issues: Issue[];
 }
 
@@ -459,6 +474,74 @@ export interface ThermalSplit {
   /** Q/(TCC·2A_h) - drop across the hot contacts */
   contact_dt_hot_expected_k: number | null;
   contact_dt_cold_expected_k: number | null;
+}
+
+/** One system-level quantity: ANSYS value, 1D twin value and their relative deviation. */
+export interface TwinMetric {
+  key: string;
+  label: string;
+  /** Display unit */
+  unit: string;
+  /** Multiply SI values by this for the display unit */
+  scale: number;
+  ansys: number | null;
+  model: number | null;
+  /** (model − ANSYS)/|ANSYS| */
+  deviation: number | null;
+  tolerance: number | null;
+  status: 'pass' | 'warn' | 'fail' | 'skip';
+}
+
+/** One design point solved by the 1D twin at the ANSYS current. */
+export interface TwinPoint {
+  design_point: string;
+  current_a: number;
+  voltage_ansys_v: number | null;
+  voltage_model_v: number | null;
+  power_ansys_w: number | null;
+  power_model_w: number | null;
+  q_hot_ansys_w: number | null;
+  q_hot_model_w: number | null;
+  q_cold_ansys_w: number | null;
+  q_cold_model_w: number | null;
+  dt_te_ansys_k: number | null;
+  dt_te_model_k: number | null;
+  /** Largest deviation of U, P (on the U_oc, P_max scale) and Q (relative) at this point */
+  worst_deviation: number | null;
+}
+
+/** Settings of the 1D twin that is run for every system (``twin.py``). */
+export interface TwinProfile {
+  ceramic_k_w_mk: number;
+  cu_k_w_mk: number;
+  /** Calibration factor on the hot-side passive resistance */
+  hot_side_factor: number;
+  /** Calibration factor on the cold-side passive resistance */
+  cold_side_factor: number;
+  /** Series resistance correction (leads, crowding) */
+  r_el_extra_mohm: number;
+  /** Finite volumes per leg */
+  n_elements: number;
+  /** Relative tolerance on U_oc */
+  tol_u_oc: number;
+  /** Relative tolerance on ΔT_TE at open circuit */
+  tol_dt_te: number;
+  /** Relative tolerance on P_max (FEM vs 1D) */
+  tol_p_max: number;
+  /** Relative tolerance on U, P and Q at single points */
+  tol_point: number;
+}
+
+/** The 1D twin of one system: same geometry, materials, contacts and boundary condition as in ANSYS. */
+export interface TwinSystem {
+  status: 'ok' | 'skipped' | 'failed';
+  note: string;
+  /** True if the twin used factors fitted to these ANSYS results */
+  calibrated: boolean;
+  a_hot_mm: number | null;
+  a_cold_mm: number | null;
+  metrics: TwinMetric[];
+  points: TwinPoint[];
 }
 
 /** One variant relative to the reference variant (thesis Table 5.3 view, plus attribution). */

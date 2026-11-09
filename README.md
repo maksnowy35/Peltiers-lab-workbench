@@ -69,7 +69,7 @@ Git - on Windows, Git for Windows provides the Git Bash terminal used below.
 
 ```bash
 ./dev.sh setup     # .venv + backend with pinned versions + frontend
-./dev.sh test      # 134 tests, incl. the thesis validation and the ANSYS export script
+./dev.sh test      # 147 tests, incl. the thesis validation and the ANSYS export script
 ./dev.sh api       # terminal 1 - API on http://127.0.0.1:8000 (docs at /docs)
 ./dev.sh ui        # terminal 2 - UI on http://localhost:4200 (/api is proxied to :8000)
 ./dev.sh check     # lint, tests, API contract and production build - before every push
@@ -97,6 +97,13 @@ active/passive temperature split, the internal resistance split into apparent, o
 P_max from the data and from analytic references, plus a variant comparison with the gain attributed to
 conductance and resistance. Nodal exports add the layer-by-layer temperature profile and the effective
 conductance of every contact - the direct test of whether a contact definition took effect.
+
+Every system is also solved by its **1D twin**: the same geometry, materials, contacts and boundary
+condition in the finite-volume model, at open circuit, at its own maximum-power current and at every
+ANSYS design-point current. The deviations feed automatic **QA gates** (energy balance, open-circuit
+point, bracketing of P_max, the analytic upper bound, contact definitions, Seebeck consistency, FEM vs 1D)
+with the tested value and the limit, so the checks done by hand before a result goes into a table are
+reproducible. With the thesis profile the twin reproduces case A0-TT within 0.01 %.
 
 ![ANSYS pipeline page: temperature through the stack and contact checks of a nodal export](docs/img/pipeline.png)
 

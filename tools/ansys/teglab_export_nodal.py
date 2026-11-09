@@ -27,7 +27,7 @@ import re
 import time
 import zipfile
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 
 CONFIG = {
     # None = <project>_files/user_files/teglab_export/<system or model name>
